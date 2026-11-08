@@ -14,6 +14,14 @@ import java.util.List;
 public interface FileOperations {
 
   /**
+   * The implementation for the device's local file system. Production code receives it through
+   * Hilt; use this in tests and in code that runs outside the dependency graph.
+   */
+  static FileOperations local() {
+    return new LocalFileOperations();
+  }
+
+  /**
    * Lists a directory: folders first, then files, each group sorted by name ignoring case.
    *
    * @throws IOException if {@code directory} is not a readable directory
