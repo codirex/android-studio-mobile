@@ -26,3 +26,5 @@ rootProject.name = "android-studio-mobile"
 include(":app")
 include(":core:common")
 include(":core:concurrency")
+include(":core:preferences")
+include(":core:ui")

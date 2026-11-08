@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        The app theme. Follows the system light/dark setting. On Android 12 and newer the colors
+        come from the wallpaper (see AsmApplication); older versions use the Material 3 baseline.
+        The brand palette and the editor color schemes are a later decision (ADR-0010).
+    -->
+    <style name="Theme.Asm" parent="Theme.Material3.DayNight.NoActionBar" />
+
+</resources>

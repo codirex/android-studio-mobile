@@ -16,6 +16,8 @@ android {
 dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:concurrency"))
+    implementation(project(":core:preferences"))
+    implementation(project(":core:ui"))
 
     implementation(libs.hilt.android)
     annotationProcessor(libs.hilt.compiler)

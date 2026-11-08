@@ -24,6 +24,11 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     targetCompatibility = AsmBuild.JAVA_VERSION
                 }
 
+                // Views are bound through generated classes, never findViewById (ADR-0010).
+                buildFeatures {
+                    viewBinding = true
+                }
+
                 lint {
                     // targetSdk 28 is deliberate and the app is distributed outside Play (ADR-0002).
                     disable.addAll(listOf("ExpiredTargetSdkVersion", "OldTargetApi"))

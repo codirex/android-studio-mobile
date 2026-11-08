@@ -22,6 +22,11 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                     sourceCompatibility = AsmBuild.JAVA_VERSION
                     targetCompatibility = AsmBuild.JAVA_VERSION
                 }
+
+                // Views are bound through generated classes, never findViewById (ADR-0010).
+                buildFeatures {
+                    viewBinding = true
+                }
             }
         }
     }

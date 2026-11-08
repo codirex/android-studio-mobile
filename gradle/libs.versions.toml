@@ -3,6 +3,8 @@ agp = "9.3.1"
 hilt = "2.59.2"
 clotho = "0.1.0-alpha01"
 lifecycle = "2.10.0"
+material = "1.14.0"
+preference = "1.2.1"
 junit = "4.13.2"
 
 [libraries]
@@ -17,6 +19,9 @@ hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hil
 
 androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "lifecycle" }
 androidx-lifecycle-livedata = { module = "androidx.lifecycle:lifecycle-livedata", version.ref = "lifecycle" }
+androidx-preference = { module = "androidx.preference:preference", version.ref = "preference" }
+
+material = { module = "com.google.android.material:material", version.ref = "material" }
 
 junit4 = { module = "junit:junit", version.ref = "junit" }
 

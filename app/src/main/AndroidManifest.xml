@@ -4,7 +4,8 @@
     <application
         android:name=".AsmApplication"
         android:allowBackup="false"
-        android:label="Android Studio Mobile">
+        android:label="@string/app_name"
+        android:theme="@style/Theme.Asm">
 
         <activity
             android:name=".MainActivity"

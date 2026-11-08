@@ -1,34 +1,44 @@
 package org.codirex.asm;
 
 import android.os.Bundle;
-import android.widget.TextView;
-import androidx.activity.ComponentActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import dagger.hilt.android.AndroidEntryPoint;
 import javax.inject.Inject;
 import org.codirex.asm.core.common.Asm;
 import org.codirex.asm.core.concurrency.ApplicationRealm;
+import org.codirex.asm.core.preferences.Pref;
+import org.codirex.asm.core.preferences.PreferenceStore;
+import org.codirex.asm.databinding.ActivityMainBinding;
 import org.codirex.clotho.Realm;
 
-/** Placeholder screen. It only proves that Hilt and the application realm are wired. */
+/**
+ * Placeholder screen. It only proves that the theme, view binding, Hilt, the application realm and
+ * the preference store work together.
+ */
 @AndroidEntryPoint
-public final class MainActivity extends ComponentActivity {
+public final class MainActivity extends AppCompatActivity {
+
+  private static final Pref<Integer> LAUNCH_COUNT = Pref.ofInt("debug.launch_count", 0);
 
   @Inject @ApplicationRealm Realm applicationRealm;
+  @Inject PreferenceStore preferences;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
+    setContentView(binding.getRoot());
 
-    TextView view = new TextView(this);
-    int padding = (int) (24 * getResources().getDisplayMetrics().density);
-    view.setPadding(padding, padding, padding, padding);
-    view.setText(
-        Asm.DISPLAY_NAME
-            + "\n"
-            + Asm.PACKAGE_NAME
+    if (savedInstanceState == null) {
+      preferences.set(LAUNCH_COUNT, preferences.get(LAUNCH_COUNT) + 1);
+    }
+
+    binding.status.setText(
+        Asm.PACKAGE_NAME
             + "\nrealm: "
             + applicationRealm.name()
-            + (applicationRealm.isClosing() ? " (closing)" : " (open)"));
-    setContentView(view);
+            + (applicationRealm.isClosing() ? " (closing)" : " (open)")
+            + "\nlaunches: "
+            + preferences.get(LAUNCH_COUNT));
   }
 }
