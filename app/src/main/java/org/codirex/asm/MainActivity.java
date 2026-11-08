@@ -1,44 +1,77 @@
 package org.codirex.asm;
 
 import android.os.Bundle;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.snackbar.Snackbar;
 import dagger.hilt.android.AndroidEntryPoint;
-import javax.inject.Inject;
-import org.codirex.asm.core.common.Asm;
-import org.codirex.asm.core.concurrency.ApplicationRealm;
-import org.codirex.asm.core.preferences.Pref;
-import org.codirex.asm.core.preferences.PreferenceStore;
 import org.codirex.asm.databinding.ActivityMainBinding;
-import org.codirex.clotho.Realm;
+import org.codirex.asm.domain.project.ProjectName;
+import org.codirex.asm.feature.project.CreateProjectFragment;
+import org.codirex.asm.feature.project.ProjectListFragment;
+import org.codirex.asm.feature.project.ProjectNavigator;
 
 /**
- * Placeholder screen. It only proves that the theme, view binding, Hilt, the application realm and
- * the preference store work together.
+ * The single activity. It hosts the screens of the features and implements their navigation
+ * contracts (ADR-0010), so features never reference each other.
  */
 @AndroidEntryPoint
-public final class MainActivity extends AppCompatActivity {
+public final class MainActivity extends AppCompatActivity implements ProjectNavigator {
 
-  private static final Pref<Integer> LAUNCH_COUNT = Pref.ofInt("debug.launch_count", 0);
-
-  @Inject @ApplicationRealm Realm applicationRealm;
-  @Inject PreferenceStore preferences;
+  private ActivityMainBinding binding;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
+    binding = ActivityMainBinding.inflate(getLayoutInflater());
     setContentView(binding.getRoot());
+    setSupportActionBar(binding.toolbar);
 
+    getSupportFragmentManager().addOnBackStackChangedListener(this::updateUpButton);
     if (savedInstanceState == null) {
-      preferences.set(LAUNCH_COUNT, preferences.get(LAUNCH_COUNT) + 1);
+      getSupportFragmentManager()
+          .beginTransaction()
+          .replace(R.id.container, new ProjectListFragment())
+          .commit();
     }
+    updateUpButton();
+  }
 
-    binding.status.setText(
-        Asm.PACKAGE_NAME
-            + "\nrealm: "
-            + applicationRealm.name()
-            + (applicationRealm.isClosing() ? " (closing)" : " (open)")
-            + "\nlaunches: "
-            + preferences.get(LAUNCH_COUNT));
+  @Override
+  public boolean onSupportNavigateUp() {
+    if (getSupportFragmentManager().popBackStackImmediate()) {
+      return true;
+    }
+    return super.onSupportNavigateUp();
+  }
+
+  @Override
+  public void showCreateProject() {
+    getSupportFragmentManager()
+        .beginTransaction()
+        .replace(R.id.container, new CreateProjectFragment())
+        .addToBackStack(null)
+        .commit();
+  }
+
+  @Override
+  public void showProject(ProjectName name) {
+    Snackbar.make(
+            binding.getRoot(),
+            getString(R.string.opening_projects_soon, name.value()),
+            Snackbar.LENGTH_SHORT)
+        .show();
+  }
+
+  @Override
+  public void onProjectCreated() {
+    getSupportFragmentManager().popBackStack();
+  }
+
+  private void updateUpButton() {
+    ActionBar bar = getSupportActionBar();
+    if (bar != null) {
+      bar.setDisplayHomeAsUpEnabled(getSupportFragmentManager().getBackStackEntryCount() > 0);
+    }
   }
 }

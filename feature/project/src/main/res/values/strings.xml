@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="project_list_title">Projects</string>
+    <string name="project_list_empty">No projects yet. Tap New project to create one.</string>
+    <string name="project_new">New project</string>
+    <string name="project_details">%1$s · %2$s</string>
+
+    <string name="project_create_title">New project</string>
+    <string name="project_name_label">Project name</string>
+    <string name="project_package_label">Package name</string>
+    <string name="project_package_hint">com.example.myapp</string>
+    <string name="project_type_label">Project type</string>
+    <string name="project_create">Create</string>
+
+    <string name="type_application">Application</string>
+    <string name="type_android_library">Android library</string>
+    <string name="type_java_library">Java library</string>
+    <string name="type_gradle_plugin">Gradle plugin</string>
+
+    <string name="project_delete_title">Delete project?</string>
+    <string name="project_delete_message">“%1$s” and all its files will be deleted. This cannot be undone.</string>
+    <string name="project_delete_confirm">Delete</string>
+
+    <string name="error_name_empty">Enter a project name.</string>
+    <string name="error_name_too_long">The name is too long. Use 64 characters at most.</string>
+    <string name="error_name_reserved">This name is reserved.</string>
+    <string name="error_name_character">The name has a character that is not allowed: / \\ : * ? \" &lt; &gt; |, a space or dot at the end, or a space at the start.</string>
+    <string name="error_name_exists">A project with this name already exists.</string>
+
+    <string name="error_package_empty">Enter a package name.</string>
+    <string name="error_package_too_few_segments">Use at least two parts separated by dots, like com.example.</string>
+    <string name="error_package_segment_start">Every part must start with a letter a to z.</string>
+    <string name="error_package_character">Use only letters, digits and underscores in each part.</string>
+    <string name="error_package_keyword">A part of the package name is a reserved Java word.</string>
+
+    <string name="error_invalid">This value is not valid.</string>
+    <string name="error_storage">The storage failed. Check the free space and try again.</string>
+    <string name="error_invalid_metadata">This project\'s settings file is damaged or from a newer version.</string>
+    <string name="error_not_found">The project no longer exists.</string>
+</resources>

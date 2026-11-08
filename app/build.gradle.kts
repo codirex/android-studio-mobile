@@ -19,6 +19,10 @@ dependencies {
     implementation(project(":core:preferences"))
     implementation(project(":core:ui"))
 
+    // The app wires data modules to the domain ports through Hilt; features never see them.
+    implementation(project(":data:project"))
+    implementation(project(":feature:project"))
+
     implementation(libs.hilt.android)
     annotationProcessor(libs.hilt.compiler)
 }
