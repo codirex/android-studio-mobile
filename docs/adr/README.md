@@ -16,6 +16,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0008](0008-ci-on-github-actions.md) | Builds and releases run on GitHub Actions | Accepted |
 | [0009](0009-hilt-with-annotation-processing.md) | Hilt with annotation processing, Java first | Proposed |
 | [0010](0010-ui-foundation.md) | UI foundation | Proposed |
+| [0011](0011-ports-and-file-access.md) | Domain ports and low-level file access | Proposed |
 
 ## Template
 

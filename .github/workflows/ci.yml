@@ -43,8 +43,10 @@ jobs:
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
 
+      # Android modules run their debug unit tests; JVM (domain) modules run `test`.
+      # Add each new JVM module here until a wrapper task replaces this list.
       - name: Unit tests
-        run: gradle testDebugUnitTest --stacktrace
+        run: gradle testDebugUnitTest :domain:common:test :domain:project:test --stacktrace
 
       - uses: actions/upload-artifact@v4
         with:
