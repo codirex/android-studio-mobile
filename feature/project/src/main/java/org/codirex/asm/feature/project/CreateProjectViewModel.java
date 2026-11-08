@@ -44,7 +44,7 @@ final class CreateProjectViewModel extends RealmViewModel {
     }
     final ProjectSpec spec =
         new ProjectSpec(ProjectName.of(name), PackageName.of(packageName), type);
-    state.set(CreateProjectState.busy());
+    state.set(CreateProjectState.inProgress());
     this.<Project>runAsync(
         checkpoint -> repository.create(spec),
         outcome -> {

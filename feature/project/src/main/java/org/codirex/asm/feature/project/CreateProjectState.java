@@ -5,13 +5,13 @@ import org.codirex.asm.domain.project.ProjectException.Reason;
 /**
  * The create screen's state. Immutable.
  *
- * <p>{@link #created()} and {@link #failure()} are one-time events: the screen reacts and then tells
- * the view model it was handled, so a rotation does not repeat them.
+ * <p>{@link #isCreated()} and {@link #failure()} are one-time events: the screen reacts and then
+ * tells the view model it was handled, so a rotation does not repeat them.
  */
 final class CreateProjectState {
 
   private static final CreateProjectState IDLE = new CreateProjectState(false, false, null);
-  private static final CreateProjectState BUSY = new CreateProjectState(true, false, null);
+  private static final CreateProjectState IN_PROGRESS = new CreateProjectState(true, false, null);
   private static final CreateProjectState CREATED = new CreateProjectState(false, true, null);
 
   private final boolean busy;
@@ -28,8 +28,8 @@ final class CreateProjectState {
     return IDLE;
   }
 
-  static CreateProjectState busy() {
-    return BUSY;
+  static CreateProjectState inProgress() {
+    return IN_PROGRESS;
   }
 
   static CreateProjectState created() {
@@ -40,6 +40,7 @@ final class CreateProjectState {
     return new CreateProjectState(false, false, reason);
   }
 
+  /** True while the project is being created. */
   boolean busy() {
     return busy;
   }
