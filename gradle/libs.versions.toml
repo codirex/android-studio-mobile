@@ -1,6 +1,26 @@
 [versions]
 agp = "9.3.1"
+hilt = "2.59.2"
+clotho = "0.1.0-alpha01"
+lifecycle = "2.10.0"
+junit = "4.13.2"
+
+[libraries]
+# Used only by build-logic to compile the convention plugins.
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+
+clotho = { module = "org.codirex.clotho:clotho", version.ref = "clotho" }
+clotho-android = { module = "org.codirex.clotho:clotho-android", version.ref = "clotho" }
+
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
+
+androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "lifecycle" }
+androidx-lifecycle-livedata = { module = "androidx.lifecycle:lifecycle-livedata", version.ref = "lifecycle" }
+
+junit4 = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

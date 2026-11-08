@@ -10,9 +10,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  layering:
+    name: Module layering (ADR-0003)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/check_layering.py
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: layering
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +42,9 @@ jobs:
 
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
+
+      - name: Unit tests
+        run: gradle testDebugUnitTest --stacktrace
 
       - uses: actions/upload-artifact@v4
         with:
