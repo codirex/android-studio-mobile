@@ -30,10 +30,10 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Install Android SDK components
-        run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37" "build-tools;36.0.0"
+      # Accepting the licenses lets AGP download the compileSdk platform and build tools it needs.
+      # The platform id for API 37 is not a plain "android-37", so we do not name it here.
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
       # No Gradle wrapper is committed yet (ADR-0008), so install the version AGP 9.3 requires.
       - uses: gradle/actions/setup-gradle@v4
