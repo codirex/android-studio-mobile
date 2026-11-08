@@ -31,19 +31,21 @@ public final class PackageNameTest {
   }
 
   @Test
-  public void segmentsMustStartWithALetter() {
+  public void segmentsMustStartWithAnAsciiLetter() {
     assertError(PackageName.ERROR_SEGMENT_START, "org.1abc");
     assertError(PackageName.ERROR_SEGMENT_START, "org._abc");
     assertError(PackageName.ERROR_SEGMENT_START, "org.");
     assertError(PackageName.ERROR_SEGMENT_START, ".org");
     assertError(PackageName.ERROR_SEGMENT_START, "org..app");
+    // A non-ASCII first letter is a start error, not a character error.
+    assertError(PackageName.ERROR_SEGMENT_START, "org.étude");
   }
 
   @Test
   public void rejectsOtherCharacters() {
     assertError(PackageName.ERROR_CHARACTER, "org.my-app");
     assertError(PackageName.ERROR_CHARACTER, "org.my app");
-    assertError(PackageName.ERROR_CHARACTER, "org.étude");
+    assertError(PackageName.ERROR_CHARACTER, "org.etudé");
   }
 
   @Test
