@@ -125,6 +125,24 @@ public final class FileTree {
     return new FileTree(children, copy);
   }
 
+  /**
+   * Returns a tree that forgets a folder and everything under it: what was loaded and what was
+   * open. Use it when the folder was deleted or renamed, so a refresh does not list it again. The
+   * entry in its parent's list is replaced when the parent is loaded again. Forgetting the root
+   * gives an empty tree.
+   */
+  public FileTree without(String path) {
+    if (path.equals(ROOT)) {
+      return EMPTY;
+    }
+    String prefix = path + "/";
+    Map<String, List<TreeNode>> loaded = new LinkedHashMap<>(children);
+    Set<String> open = new LinkedHashSet<>(expanded);
+    loaded.keySet().removeIf(key -> key.equals(path) || key.startsWith(prefix));
+    open.removeIf(key -> key.equals(path) || key.startsWith(prefix));
+    return new FileTree(loaded, open);
+  }
+
   /** Opens a closed folder and closes an open one. */
   public FileTree toggled(String path) {
     return isExpanded(path) ? withCollapsed(path) : withExpanded(path);

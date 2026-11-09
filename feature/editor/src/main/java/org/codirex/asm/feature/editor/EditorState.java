@@ -95,6 +95,30 @@ final class EditorState {
         tabs.close(path), newDirty, newLoading, shownPath, shownText, revision, error);
   }
 
+  /**
+   * {@code from} was renamed to {@code to}: its tab, the tabs of the files inside it and their
+   * marks move along. The shown text stays and so does the revision, because the editor widget
+   * already holds that text.
+   */
+  EditorState renamed(String from, String to) {
+    return new EditorState(
+        tabs.renamed(from, to),
+        remapAll(dirty, from, to),
+        remapAll(loading, from, to),
+        shownPath == null ? null : EditorTabs.remapPath(shownPath, from, to),
+        shownText,
+        revision,
+        error);
+  }
+
+  private static Set<String> remapAll(Set<String> paths, String from, String to) {
+    Set<String> result = new HashSet<>();
+    for (String path : paths) {
+      result.add(EditorTabs.remapPath(path, from, to));
+    }
+    return result;
+  }
+
   EditorState failed(Reason reason) {
     return new EditorState(tabs, dirty, loading, shownPath, shownText, revision, reason);
   }

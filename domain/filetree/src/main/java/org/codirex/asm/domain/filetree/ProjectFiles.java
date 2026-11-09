@@ -5,8 +5,8 @@ import org.codirex.asm.domain.project.ProjectException;
 import org.codirex.asm.domain.project.ProjectName;
 
 /**
- * Lists, creates and deletes the files of a project. The domain defines it; {@code data:project}
- * implements it.
+ * Lists, creates, renames and deletes the files of a project. The domain defines it; {@code
+ * data:project} implements it.
  *
  * <p><b>Every method blocks.</b> Callers run them in a background job, never on the main thread.
  * Paths are relative to the project root and use {@code /}; the empty path is the root.
@@ -35,6 +35,16 @@ public interface ProjectFiles {
    */
   void create(ProjectName project, String parentPath, String name, boolean directory)
       throws ProjectException;
+
+  /**
+   * Gives a file or folder a new name; it stays in the same folder, with everything inside it.
+   *
+   * @throws ProjectException with reason {@code ALREADY_EXISTS} if the new name is taken, {@code
+   *     NOT_FOUND} if there is no such project, or {@code STORAGE} if the new name is not valid, the
+   *     entry does not exist, it is the project root or the internal folder, or the path leaves the
+   *     project
+   */
+  void rename(ProjectName project, String relativePath, String newName) throws ProjectException;
 
   /**
    * Deletes a file, or a folder with everything inside it. The project root and the internal folder

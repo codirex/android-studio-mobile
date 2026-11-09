@@ -61,6 +61,15 @@ public interface FileOperations {
   void delete(File fileOrDirectory) throws IOException;
 
   /**
+   * Moves or renames a file or a directory with everything inside it. Nothing is overwritten and no
+   * parent directory is created.
+   *
+   * @throws IOException if {@code source} does not exist, {@code target} exists, {@code target} lies
+   *     inside {@code source}, or the move failed
+   */
+  void move(File source, File target) throws IOException;
+
+  /**
    * Resolves {@code relativePath} against {@code root} and guarantees the result stays inside
    * {@code root}, even through {@code ..} segments or symbolic links. Use it for every path that
    * comes from a template, an archive or a user.

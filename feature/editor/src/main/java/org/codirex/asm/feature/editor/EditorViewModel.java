@@ -6,12 +6,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import org.codirex.asm.core.concurrency.RealmFactory;
 import org.codirex.asm.core.concurrency.RealmViewModel;
 import org.codirex.asm.core.concurrency.UiStateHolder;
+import org.codirex.asm.domain.editor.EditorTabs;
 import org.codirex.asm.domain.editor.ProjectDocuments;
 import org.codirex.asm.domain.project.ProjectName;
 
@@ -111,6 +113,29 @@ final class EditorViewModel extends RealmViewModel {
     }
   }
 
+  /**
+   * {@code from} was renamed to {@code to} on disk: the tabs of that file, or of the files inside
+   * that folder, follow it with their text and unsaved marks. A document that was still loading is
+   * loaded again from its new path.
+   */
+  void renameUnder(String from, String to) {
+    EditorState before = state.get();
+    List<String> reload = new ArrayList<>();
+    for (String path : before.tabs().paths()) {
+      String moved = EditorTabs.remapPath(path, from, to);
+      if (!moved.equals(path) && before.isLoading(path)) {
+        reload.add(moved);
+      }
+    }
+    remapKeys(buffers, from, to);
+    remapKeys(edits, from, to);
+    remapKeys(queued, from, to);
+    state.set(before.renamed(from, to));
+    for (String path : reload) {
+      load(path);
+    }
+  }
+
   /** The user changed the shown document. Cheap: it only marks the tab. */
   void onEdited(String path) {
     EditorState s = state.get();
@@ -142,6 +167,15 @@ final class EditorViewModel extends RealmViewModel {
   /** The screen showed the error; do not show it again. */
   void errorHandled() {
     state.set(state.get().errorHandled());
+  }
+
+  private static <V> void remapKeys(Map<String, V> map, String from, String to) {
+    Map<String, V> moved = new HashMap<>();
+    for (Map.Entry<String, V> entry : map.entrySet()) {
+      moved.put(EditorTabs.remapPath(entry.getKey(), from, to), entry.getValue());
+    }
+    map.clear();
+    map.putAll(moved);
   }
 
   private EditorState show(EditorState s, String path) {

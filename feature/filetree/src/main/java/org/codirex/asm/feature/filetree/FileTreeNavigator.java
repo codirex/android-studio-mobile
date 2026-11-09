@@ -13,4 +13,10 @@ public interface FileTreeNavigator {
 
   /** A file or folder was deleted. Anything showing it, or something inside it, must let go. */
   void pathDeleted(ProjectName project, String relativePath);
+
+  /**
+   * A file or folder was renamed. Anything showing it, or something inside it, must follow it to
+   * the new path.
+   */
+  void pathRenamed(ProjectName project, String oldPath, String newPath);
 }

@@ -80,6 +80,19 @@ public final class EditorFragment extends Fragment {
     snapshotCurrent();
   }
 
+  /**
+   * A file or folder was renamed: its tab, and the tabs of the files inside it, follow it. Unsaved
+   * text is then saved under the new name, not the old one.
+   */
+  public void renameUnder(String from, String to) {
+    if (viewModel == null) {
+      return;
+    }
+    handler.removeCallbacks(autoSave);
+    viewModel.renameUnder(from, to);
+    snapshotCurrent();
+  }
+
   @Nullable
   @Override
   public View onCreateView(
@@ -175,9 +188,10 @@ public final class EditorFragment extends Fragment {
 
     if (state.revision() != appliedRevision) {
       appliedRevision = state.revision();
-      currentPath = state.shownPath();
       binding.editor.setText(state.shownText());
     }
+    // A rename changes the shown path without changing the text, so follow it here.
+    currentPath = state.shownPath();
     String shown = state.shownPath();
     boolean loading = shown != null && state.isLoading(shown);
     binding.editor.setEditable(shown != null && !loading);

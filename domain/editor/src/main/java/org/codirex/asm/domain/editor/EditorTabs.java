@@ -29,6 +29,22 @@ public final class EditorTabs {
     return EMPTY;
   }
 
+  /**
+   * Where a path ends up when {@code from} is renamed to {@code to}: {@code to} itself if {@code
+   * path} is {@code from}, the same path under {@code to} if it lies inside the folder {@code from},
+   * and {@code path} unchanged otherwise. A name that only starts like {@code from}, as {@code
+   * a.txt.bak} does for {@code a.txt}, is not inside it.
+   */
+  public static String remapPath(String path, String from, String to) {
+    if (path.equals(from)) {
+      return to;
+    }
+    if (path.startsWith(from + "/")) {
+      return to + path.substring(from.length());
+    }
+    return path;
+  }
+
   /** The open files, in the order they were opened. */
   public List<String> paths() {
     return paths;
@@ -81,6 +97,18 @@ public final class EditorTabs {
       newActive = copy.isEmpty() ? null : copy.get(Math.min(index, copy.size() - 1));
     }
     return new EditorTabs(copy, newActive);
+  }
+
+  /**
+   * The tabs after {@code from} was renamed to {@code to}: every open path that is {@code from} or
+   * lies inside it moves along (see {@link #remapPath}). The order and the active tab are kept.
+   */
+  public EditorTabs renamed(String from, String to) {
+    List<String> copy = new ArrayList<>(paths.size());
+    for (String path : paths) {
+      copy.add(remapPath(path, from, to));
+    }
+    return new EditorTabs(copy, active == null ? null : remapPath(active, from, to));
   }
 
   @Override

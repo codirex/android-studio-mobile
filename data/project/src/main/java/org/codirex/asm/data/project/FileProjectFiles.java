@@ -15,7 +15,10 @@ import org.codirex.asm.domain.project.ProjectException;
 import org.codirex.asm.domain.project.ProjectException.Reason;
 import org.codirex.asm.domain.project.ProjectName;
 
-/** Lists, creates and deletes project files. Paths are resolved by {@link ProjectLocator}, so they stay inside the project. */
+/**
+ * Lists, creates, renames and deletes project files. Paths are resolved by {@link ProjectLocator},
+ * so they stay inside the project.
+ */
 @Singleton
 final class FileProjectFiles implements ProjectFiles {
 
@@ -77,6 +80,34 @@ final class FileProjectFiles implements ProjectFiles {
   }
 
   @Override
+  public void rename(ProjectName project, String relativePath, String newName)
+      throws ProjectException {
+    if (relativePath.isEmpty()) {
+      throw new ProjectException(Reason.STORAGE, "the project root cannot be renamed");
+    }
+    if (!EntryNames.isValid(newName)) {
+      throw new ProjectException(Reason.STORAGE, "invalid name: " + newName);
+    }
+    File source = locator.resolve(project, relativePath);
+    rejectInternal(project, source);
+    if (!source.exists()) {
+      throw new ProjectException(Reason.STORAGE, "no such file: " + relativePath);
+    }
+    int slash = relativePath.lastIndexOf('/');
+    String parent = slash < 0 ? "" : relativePath.substring(0, slash);
+    File target = locator.resolve(project, parent.isEmpty() ? newName : parent + "/" + newName);
+    rejectInternal(project, target);
+    if (target.exists()) {
+      throw new ProjectException(Reason.ALREADY_EXISTS, "already exists: " + newName);
+    }
+    try {
+      files.move(source, target);
+    } catch (IOException e) {
+      throw new ProjectException(Reason.STORAGE, "cannot rename " + relativePath, e);
+    }
+  }
+
+  @Override
   public void delete(ProjectName project, String relativePath) throws ProjectException {
     if (relativePath.isEmpty()) {
       throw new ProjectException(Reason.STORAGE, "the project root cannot be deleted");
@@ -90,7 +121,7 @@ final class FileProjectFiles implements ProjectFiles {
     }
   }
 
-  /** The internal folder is the IDE's: nothing is created in it or deleted from it. */
+  /** The internal folder is the IDE's: nothing is created in it, renamed or deleted from it. */
   private void rejectInternal(ProjectName project, File target) throws ProjectException {
     try {
       File directory = locator.projectDirectory(project);

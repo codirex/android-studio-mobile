@@ -16,9 +16,9 @@ import org.codirex.asm.domain.filetree.TreeNode;
 import org.codirex.asm.domain.project.ProjectName;
 
 /**
- * Loads the folders of one project off the main thread, keeps the {@link FileTree} and creates and
- * deletes entries. All methods are called on the main thread. The project name comes from the
- * fragment arguments.
+ * Loads the folders of one project off the main thread, keeps the {@link FileTree} and creates,
+ * renames and deletes entries. All methods are called on the main thread. The project name comes
+ * from the fragment arguments.
  */
 @HiltViewModel
 final class FileTreeViewModel extends RealmViewModel {
@@ -95,6 +95,34 @@ final class FileTreeViewModel extends RealmViewModel {
         });
   }
 
+  /**
+   * Gives an entry a new name (already validated) in the same folder, then reloads that folder. A
+   * renamed folder shows closed, because what was loaded under the old path is dropped.
+   */
+  void rename(TreeNode node, String newName) {
+    String path = node.path();
+    String parent = node.parentPath();
+    String newPath = parent.isEmpty() ? newName : parent + "/" + newName;
+    state.set(state.get().started());
+    this.<Boolean>runAsync(
+        checkpoint -> {
+          files.rename(project, path, newName);
+          return Boolean.TRUE;
+        },
+        outcome -> {
+          FileTreeState current = state.get();
+          if (outcome.isSuccess()) {
+            FileTree tree = current.tree().without(path);
+            state.set(current.finished(tree).withEvent(TreeEvent.renamed(path, newPath)));
+            load(parent);
+          } else if (outcome.isFailure()) {
+            state.set(current.failed(current.tree(), Failures.reasonOf(outcome.failureOrNull())));
+          } else {
+            state.set(current.finished(current.tree()));
+          }
+        });
+  }
+
   /** Deletes a file, or a folder with its content, then reloads the folder that held it. */
   void delete(TreeNode node) {
     String path = node.path();
@@ -108,7 +136,8 @@ final class FileTreeViewModel extends RealmViewModel {
         outcome -> {
           FileTreeState current = state.get();
           if (outcome.isSuccess()) {
-            state.set(current.finished(current.tree()).withEvent(TreeEvent.deleted(path)));
+            FileTree tree = current.tree().without(path);
+            state.set(current.finished(tree).withEvent(TreeEvent.deleted(path)));
             load(parent);
           } else if (outcome.isFailure()) {
             state.set(current.failed(current.tree(), Failures.reasonOf(outcome.failureOrNull())));

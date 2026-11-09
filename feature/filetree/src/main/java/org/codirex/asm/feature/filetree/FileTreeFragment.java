@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.PopupMenu;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -16,6 +17,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import dagger.hilt.android.AndroidEntryPoint;
 import java.util.List;
+import java.util.function.Consumer;
 import org.codirex.asm.domain.filetree.EntryNames;
 import org.codirex.asm.domain.filetree.FileTree;
 import org.codirex.asm.domain.filetree.TreeNode;
@@ -25,14 +27,16 @@ import org.codirex.asm.feature.filetree.databinding.FragmentFileTreeBinding;
 
 /**
  * The files of one project as a tree. Folders open and close on tap; a tapped file is reported.
- * A long press offers new file, new folder and delete; two buttons create at the project root.
+ * A long press offers new file, new folder, rename and delete; two buttons create at the project
+ * root.
  */
 @AndroidEntryPoint
 public final class FileTreeFragment extends Fragment {
 
   private static final int MENU_NEW_FILE = 1;
   private static final int MENU_NEW_FOLDER = 2;
-  private static final int MENU_DELETE = 3;
+  private static final int MENU_RENAME = 3;
+  private static final int MENU_DELETE = 4;
 
   private FileTreeViewModel viewModel;
   private FragmentFileTreeBinding binding;
@@ -103,10 +107,18 @@ public final class FileTreeFragment extends Fragment {
     TreeEvent event = state.event();
     if (event != null) {
       FileTreeNavigator navigator = (FileTreeNavigator) requireActivity();
-      if (event.type() == TreeEvent.Type.OPEN) {
-        navigator.openFile(project, event.path());
-      } else {
-        navigator.pathDeleted(project, event.path());
+      switch (event.type()) {
+        case OPEN:
+          navigator.openFile(project, event.path());
+          break;
+        case DELETED:
+          navigator.pathDeleted(project, event.path());
+          break;
+        case RENAMED:
+          navigator.pathRenamed(project, event.path(), event.newPath());
+          break;
+        default:
+          break;
       }
       viewModel.eventHandled();
     }
@@ -128,7 +140,8 @@ public final class FileTreeFragment extends Fragment {
       menu.getMenu().add(Menu.NONE, MENU_NEW_FILE, 0, R.string.tree_new_file);
       menu.getMenu().add(Menu.NONE, MENU_NEW_FOLDER, 1, R.string.tree_new_folder);
     }
-    menu.getMenu().add(Menu.NONE, MENU_DELETE, 2, R.string.tree_delete);
+    menu.getMenu().add(Menu.NONE, MENU_RENAME, 2, R.string.tree_rename);
+    menu.getMenu().add(Menu.NONE, MENU_DELETE, 3, R.string.tree_delete);
     menu.setOnMenuItemClickListener(
         item -> {
           switch (item.getItemId()) {
@@ -137,6 +150,9 @@ public final class FileTreeFragment extends Fragment {
               return true;
             case MENU_NEW_FOLDER:
               showNewEntryDialog(node.path(), true);
+              return true;
+            case MENU_RENAME:
+              showRenameDialog(node);
               return true;
             case MENU_DELETE:
               confirmDelete(node);
@@ -149,15 +165,42 @@ public final class FileTreeFragment extends Fragment {
   }
 
   private void showNewEntryDialog(String parentPath, boolean directory) {
+    showNameDialog(
+        directory ? R.string.tree_new_folder : R.string.tree_new_file,
+        R.string.tree_create,
+        "",
+        name -> viewModel.create(parentPath, name, directory));
+  }
+
+  private void showRenameDialog(TreeNode node) {
+    showNameDialog(
+        R.string.tree_rename,
+        R.string.tree_rename,
+        node.name(),
+        name -> {
+          // The same name is not a change.
+          if (!name.equals(node.name())) {
+            viewModel.rename(node, name);
+          }
+        });
+  }
+
+  /**
+   * Asks for a name. The positive button is wired after show() so an invalid name keeps the dialog
+   * open; only a valid, trimmed name reaches {@code onName}.
+   */
+  private void showNameDialog(
+      @StringRes int title, @StringRes int positive, String initial, Consumer<String> onName) {
     DialogEntryNameBinding input = DialogEntryNameBinding.inflate(getLayoutInflater());
+    input.entryName.setText(initial);
+    input.entryName.selectAll();
     AlertDialog dialog =
         new MaterialAlertDialogBuilder(requireContext())
-            .setTitle(directory ? R.string.tree_new_folder : R.string.tree_new_file)
+            .setTitle(title)
             .setView(input.getRoot())
             .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.tree_create, null)
+            .setPositiveButton(positive, null)
             .create();
-    // The button is wired after show() so an invalid name keeps the dialog open.
     dialog.setOnShowListener(
         d ->
             dialog
@@ -170,7 +213,7 @@ public final class FileTreeFragment extends Fragment {
                         return;
                       }
                       dialog.dismiss();
-                      viewModel.create(parentPath, name, directory);
+                      onName.accept(name);
                     }));
     dialog.show();
   }

@@ -104,6 +104,14 @@ public final class WorkspaceFragment extends Fragment {
     }
   }
 
+  /** A file or folder was renamed: the editor follows it. */
+  void pathRenamed(String oldPath, String newPath) {
+    EditorFragment editor = editor();
+    if (editor != null) {
+      editor.renameUnder(oldPath, newPath);
+    }
+  }
+
   /** Shows the file tree. */
   void showFiles() {
     binding.drawer.openDrawer(GravityCompat.START);

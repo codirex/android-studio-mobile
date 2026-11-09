@@ -88,6 +88,14 @@ public final class MainActivity extends AppCompatActivity
   }
 
   @Override
+  public void pathRenamed(ProjectName project, String oldPath, String newPath) {
+    WorkspaceFragment workspace = workspace();
+    if (workspace != null) {
+      workspace.pathRenamed(oldPath, newPath);
+    }
+  }
+
+  @Override
   public void showFileTree() {
     WorkspaceFragment workspace = workspace();
     if (workspace != null) {

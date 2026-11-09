@@ -115,6 +115,24 @@ final class LocalFileOperations implements FileOperations {
   }
 
   @Override
+  public void move(File source, File target) throws IOException {
+    if (!source.exists()) {
+      throw new IOException("no such file: " + source);
+    }
+    if (target.exists()) {
+      throw new IOException("already exists: " + target);
+    }
+    String from = source.getCanonicalPath();
+    String to = target.getCanonicalPath();
+    if (to.startsWith(from + File.separator)) {
+      throw new IOException("cannot move " + source + " into itself");
+    }
+    if (!source.renameTo(target)) {
+      throw new IOException("cannot move " + source + " to " + target);
+    }
+  }
+
+  @Override
   public File resolve(File root, String relativePath) throws IOException {
     if (relativePath.startsWith("/") || relativePath.startsWith(File.separator)) {
       throw new IOException("absolute path not allowed: " + relativePath);
