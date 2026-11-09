@@ -80,6 +80,14 @@ public final class MainActivity extends AppCompatActivity
   }
 
   @Override
+  public void pathDeleted(ProjectName project, String relativePath) {
+    WorkspaceFragment workspace = workspace();
+    if (workspace != null) {
+      workspace.pathDeleted(relativePath);
+    }
+  }
+
+  @Override
   public void showFileTree() {
     WorkspaceFragment workspace = workspace();
     if (workspace != null) {

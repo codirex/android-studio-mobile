@@ -90,14 +90,27 @@ public final class WorkspaceFragment extends Fragment {
   /** Opens a file of the project in the editor and closes the drawer. */
   void openFile(String relativePath) {
     binding.drawer.closeDrawer(GravityCompat.START);
-    Fragment editor = getChildFragmentManager().findFragmentById(R.id.editor_container);
-    if (editor instanceof EditorFragment) {
-      ((EditorFragment) editor).open(relativePath);
+    EditorFragment editor = editor();
+    if (editor != null) {
+      editor.open(relativePath);
+    }
+  }
+
+  /** A file or folder was deleted: the editor lets go of it. */
+  void pathDeleted(String relativePath) {
+    EditorFragment editor = editor();
+    if (editor != null) {
+      editor.closeUnder(relativePath);
     }
   }
 
   /** Shows the file tree. */
   void showFiles() {
     binding.drawer.openDrawer(GravityCompat.START);
+  }
+
+  private EditorFragment editor() {
+    Fragment editor = getChildFragmentManager().findFragmentById(R.id.editor_container);
+    return editor instanceof EditorFragment ? (EditorFragment) editor : null;
   }
 }

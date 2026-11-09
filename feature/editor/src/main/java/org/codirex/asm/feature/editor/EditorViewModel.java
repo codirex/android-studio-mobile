@@ -3,6 +3,7 @@ package org.codirex.asm.feature.editor;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.SavedStateHandle;
 import dagger.hilt.android.lifecycle.HiltViewModel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -87,6 +88,26 @@ final class EditorViewModel extends RealmViewModel {
     EditorState s = state.get();
     if (s.tabs().isOpen(path)) {
       state.set(removeTab(s, path));
+    }
+  }
+
+  /**
+   * Closes the tab of a deleted file, and of every file inside a deleted folder, without saving: the
+   * text must not bring the files back.
+   */
+  void discardUnder(String path) {
+    EditorState s = state.get();
+    String prefix = path + "/";
+    boolean changed = false;
+    for (String open : new ArrayList<>(s.tabs().paths())) {
+      if (open.equals(path) || open.startsWith(prefix)) {
+        queued.remove(open);
+        s = removeTab(s, open);
+        changed = true;
+      }
+    }
+    if (changed) {
+      state.set(s);
     }
   }
 

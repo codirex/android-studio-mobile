@@ -8,13 +8,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.codirex.asm.core.fs.FileEntry;
 import org.codirex.asm.core.fs.FileOperations;
+import org.codirex.asm.domain.filetree.EntryNames;
 import org.codirex.asm.domain.filetree.ProjectFiles;
 import org.codirex.asm.domain.filetree.TreeNode;
 import org.codirex.asm.domain.project.ProjectException;
 import org.codirex.asm.domain.project.ProjectException.Reason;
 import org.codirex.asm.domain.project.ProjectName;
 
-/** Lists project folders. Paths are resolved by {@link ProjectLocator}, so they stay inside the project. */
+/** Lists, creates and deletes project files. Paths are resolved by {@link ProjectLocator}, so they stay inside the project. */
 @Singleton
 final class FileProjectFiles implements ProjectFiles {
 
@@ -47,5 +48,57 @@ final class FileProjectFiles implements ProjectFiles {
       nodes.add(new TreeNode(path, entry.isDirectory()));
     }
     return nodes;
+  }
+
+  @Override
+  public void create(ProjectName project, String parentPath, String name, boolean directory)
+      throws ProjectException {
+    if (!EntryNames.isValid(name)) {
+      throw new ProjectException(Reason.STORAGE, "invalid name: " + name);
+    }
+    File parent = locator.resolve(project, parentPath);
+    if (!parent.isDirectory()) {
+      throw new ProjectException(Reason.STORAGE, "not a folder: " + parentPath);
+    }
+    File target = locator.resolve(project, parentPath.isEmpty() ? name : parentPath + "/" + name);
+    rejectInternal(project, target);
+    if (target.exists()) {
+      throw new ProjectException(Reason.ALREADY_EXISTS, "already exists: " + name);
+    }
+    try {
+      if (directory) {
+        files.createDirectories(target);
+      } else {
+        files.writeText(target, "");
+      }
+    } catch (IOException e) {
+      throw new ProjectException(Reason.STORAGE, "cannot create " + name, e);
+    }
+  }
+
+  @Override
+  public void delete(ProjectName project, String relativePath) throws ProjectException {
+    if (relativePath.isEmpty()) {
+      throw new ProjectException(Reason.STORAGE, "the project root cannot be deleted");
+    }
+    File target = locator.resolve(project, relativePath);
+    rejectInternal(project, target);
+    try {
+      files.delete(target);
+    } catch (IOException e) {
+      throw new ProjectException(Reason.STORAGE, "cannot delete " + relativePath, e);
+    }
+  }
+
+  /** The internal folder is the IDE's: nothing is created in it or deleted from it. */
+  private void rejectInternal(ProjectName project, File target) throws ProjectException {
+    try {
+      File directory = locator.projectDirectory(project);
+      if (ProjectLocator.isInternal(directory, target)) {
+        throw new ProjectException(Reason.STORAGE, "internal path: " + target.getName());
+      }
+    } catch (IOException e) {
+      throw new ProjectException(Reason.STORAGE, "cannot check " + target.getName(), e);
+    }
   }
 }

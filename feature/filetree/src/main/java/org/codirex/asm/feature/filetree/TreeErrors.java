@@ -14,6 +14,7 @@ final class TreeErrors {
       case NOT_FOUND:
         return R.string.tree_error_not_found;
       case ALREADY_EXISTS:
+        return R.string.tree_error_exists;
       case INVALID_METADATA:
       case STORAGE:
       default:

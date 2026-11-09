@@ -16,8 +16,9 @@ import org.codirex.asm.domain.filetree.TreeNode;
 import org.codirex.asm.domain.project.ProjectName;
 
 /**
- * Loads the folders of one project off the main thread and keeps the {@link FileTree}. All methods
- * are called on the main thread. The project name comes from the fragment arguments.
+ * Loads the folders of one project off the main thread, keeps the {@link FileTree} and creates and
+ * deletes entries. All methods are called on the main thread. The project name comes from the
+ * fragment arguments.
  */
 @HiltViewModel
 final class FileTreeViewModel extends RealmViewModel {
@@ -64,9 +65,67 @@ final class FileTreeViewModel extends RealmViewModel {
     }
   }
 
+  /**
+   * Creates a file or folder named {@code name} (already validated) in {@code parentPath}. The
+   * parent opens so the new entry is visible; a new file is also reported to be opened.
+   */
+  void create(String parentPath, String name, boolean directory) {
+    String path = parentPath.isEmpty() ? name : parentPath + "/" + name;
+    state.set(state.get().started());
+    this.<Boolean>runAsync(
+        checkpoint -> {
+          files.create(project, parentPath, name, directory);
+          return Boolean.TRUE;
+        },
+        outcome -> {
+          FileTreeState current = state.get();
+          if (outcome.isSuccess()) {
+            FileTree tree = current.tree();
+            if (!parentPath.isEmpty()) {
+              tree = tree.withExpanded(parentPath);
+            }
+            FileTreeState next = current.finished(tree);
+            state.set(directory ? next : next.withEvent(TreeEvent.open(path)));
+            load(parentPath);
+          } else if (outcome.isFailure()) {
+            state.set(current.failed(current.tree(), Failures.reasonOf(outcome.failureOrNull())));
+          } else {
+            state.set(current.finished(current.tree()));
+          }
+        });
+  }
+
+  /** Deletes a file, or a folder with its content, then reloads the folder that held it. */
+  void delete(TreeNode node) {
+    String path = node.path();
+    String parent = node.parentPath();
+    state.set(state.get().started());
+    this.<Boolean>runAsync(
+        checkpoint -> {
+          files.delete(project, path);
+          return Boolean.TRUE;
+        },
+        outcome -> {
+          FileTreeState current = state.get();
+          if (outcome.isSuccess()) {
+            state.set(current.finished(current.tree()).withEvent(TreeEvent.deleted(path)));
+            load(parent);
+          } else if (outcome.isFailure()) {
+            state.set(current.failed(current.tree(), Failures.reasonOf(outcome.failureOrNull())));
+          } else {
+            state.set(current.finished(current.tree()));
+          }
+        });
+  }
+
   /** The screen showed the error; do not show it again. */
   void errorHandled() {
     state.set(state.get().errorHandled());
+  }
+
+  /** The screen passed the event to the host; do not pass it again. */
+  void eventHandled() {
+    state.set(state.get().eventHandled());
   }
 
   private void load(String path) {

@@ -66,6 +66,20 @@ public final class EditorFragment extends Fragment {
     viewModel.open(relativePath);
   }
 
+  /**
+   * A file or folder was deleted: closes its tab, and the tabs of the files inside it, without
+   * saving them.
+   */
+  public void closeUnder(String relativePath) {
+    if (viewModel == null) {
+      return;
+    }
+    handler.removeCallbacks(autoSave);
+    viewModel.discardUnder(relativePath);
+    // The pending save of the tab that stays was cancelled above; do it now.
+    snapshotCurrent();
+  }
+
   @Nullable
   @Override
   public View onCreateView(

@@ -1,6 +1,8 @@
 package org.codirex.asm.data.project;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
@@ -102,6 +104,124 @@ public final class FileProjectFilesTest {
     files.createDirectories(new File(root, "Other"));
     assertFails(Reason.STORAGE, demo, "../Other");
     assertFails(Reason.STORAGE, demo, "src/../../Other");
+  }
+
+  @Test
+  public void createsAnEmptyFileAtTheRoot() throws Exception {
+    projectFiles.create(demo, "", "notes.txt", false);
+
+    File created = new File(root, "Demo/notes.txt");
+    assertTrue(created.isFile());
+    assertEquals(0, created.length());
+  }
+
+  @Test
+  public void createsAFolderInsideAnotherFolder() throws Exception {
+    files.createDirectories(new File(root, "Demo/src"));
+
+    projectFiles.create(demo, "src", "main", true);
+
+    assertTrue(new File(root, "Demo/src/main").isDirectory());
+  }
+
+  @Test
+  public void creatingAnExistingNameFailsAndKeepsTheContent() throws Exception {
+    files.writeText(new File(root, "Demo/a.txt"), "keep");
+
+    assertCreateFails(Reason.ALREADY_EXISTS, "", "a.txt", false);
+    assertCreateFails(Reason.ALREADY_EXISTS, "", "a.txt", true);
+    assertEquals("keep", files.readText(new File(root, "Demo/a.txt")));
+  }
+
+  @Test
+  public void creatingWithAnInvalidNameIsRefused() {
+    assertCreateFails(Reason.STORAGE, "", "", false);
+    assertCreateFails(Reason.STORAGE, "", "..", true);
+    assertCreateFails(Reason.STORAGE, "", "a/b", false);
+  }
+
+  @Test
+  public void creatingInsideAFileOrAMissingFolderIsRefused() throws Exception {
+    files.writeText(new File(root, "Demo/a.txt"), "x");
+
+    assertCreateFails(Reason.STORAGE, "a.txt", "b.txt", false);
+    assertCreateFails(Reason.STORAGE, "nothing", "b.txt", false);
+  }
+
+  @Test
+  public void creatingOutsideTheProjectOrInTheInternalFolderIsRefused() throws Exception {
+    files.createDirectories(new File(root, "Other"));
+
+    assertCreateFails(Reason.STORAGE, "../Other", "x.txt", false);
+    assertCreateFails(Reason.STORAGE, ".asm", "x.txt", false);
+    assertCreateFails(Reason.STORAGE, "", ".asm", true);
+    assertFalse(new File(root, "Other/x.txt").exists());
+    assertFalse(new File(root, "Demo/.asm/x.txt").exists());
+  }
+
+  @Test
+  public void creatingInAnUnknownProjectIsNotFound() {
+    try {
+      projectFiles.create(ProjectName.of("Nope"), "", "a.txt", false);
+      fail("expected NOT_FOUND");
+    } catch (ProjectException e) {
+      assertEquals(Reason.NOT_FOUND, e.reason());
+    }
+  }
+
+  @Test
+  public void deletesAFile() throws Exception {
+    files.writeText(new File(root, "Demo/a.txt"), "x");
+
+    projectFiles.delete(demo, "a.txt");
+
+    assertFalse(new File(root, "Demo/a.txt").exists());
+  }
+
+  @Test
+  public void deletesAFolderWithItsContent() throws Exception {
+    files.writeText(new File(root, "Demo/src/main/App.java"), "x");
+
+    projectFiles.delete(demo, "src");
+
+    assertFalse(new File(root, "Demo/src").exists());
+    assertTrue(new File(root, "Demo/.asm/project.properties").isFile());
+  }
+
+  @Test
+  public void deletingTheRootOrTheInternalFolderIsRefused() {
+    assertDeleteFails("");
+    assertDeleteFails(".asm");
+    assertDeleteFails(".asm/project.properties");
+    assertDeleteFails("src/../.asm");
+    assertTrue(new File(root, "Demo/.asm/project.properties").isFile());
+  }
+
+  @Test
+  public void deletingOutsideTheProjectIsRefused() throws Exception {
+    files.writeText(new File(root, "Other/a.txt"), "keep");
+
+    assertDeleteFails("../Other/a.txt");
+    assertDeleteFails("../Other");
+    assertTrue(new File(root, "Other/a.txt").isFile());
+  }
+
+  private void assertCreateFails(Reason expected, String parent, String name, boolean directory) {
+    try {
+      projectFiles.create(demo, parent, name, directory);
+      fail("expected " + expected);
+    } catch (ProjectException e) {
+      assertEquals(expected, e.reason());
+    }
+  }
+
+  private void assertDeleteFails(String path) {
+    try {
+      projectFiles.delete(demo, path);
+      fail("expected failure for '" + path + "'");
+    } catch (ProjectException e) {
+      assertEquals(Reason.STORAGE, e.reason());
+    }
   }
 
   private void assertFails(Reason expected, ProjectName project, String path) {

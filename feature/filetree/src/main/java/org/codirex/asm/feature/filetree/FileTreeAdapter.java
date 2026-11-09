@@ -2,11 +2,13 @@ package org.codirex.asm.feature.filetree;
 
 import android.content.Context;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.codirex.asm.domain.filetree.FileTree;
 import org.codirex.asm.feature.filetree.databinding.ItemTreeRowBinding;
@@ -28,10 +30,12 @@ final class FileTreeAdapter extends ListAdapter<FileTree.Row, FileTreeAdapter.Ho
       };
 
   private final Consumer<FileTree.Row> onClick;
+  private final BiConsumer<View, FileTree.Row> onLongClick;
 
-  FileTreeAdapter(Consumer<FileTree.Row> onClick) {
+  FileTreeAdapter(Consumer<FileTree.Row> onClick, BiConsumer<View, FileTree.Row> onLongClick) {
     super(DIFF);
     this.onClick = onClick;
+    this.onLongClick = onLongClick;
   }
 
   @NonNull
@@ -43,7 +47,7 @@ final class FileTreeAdapter extends ListAdapter<FileTree.Row, FileTreeAdapter.Ho
 
   @Override
   public void onBindViewHolder(@NonNull Holder holder, int position) {
-    holder.bind(getItem(position), onClick);
+    holder.bind(getItem(position), onClick, onLongClick);
   }
 
   static final class Holder extends RecyclerView.ViewHolder {
@@ -55,7 +59,10 @@ final class FileTreeAdapter extends ListAdapter<FileTree.Row, FileTreeAdapter.Ho
       this.binding = binding;
     }
 
-    void bind(FileTree.Row row, Consumer<FileTree.Row> onClick) {
+    void bind(
+        FileTree.Row row,
+        Consumer<FileTree.Row> onClick,
+        BiConsumer<View, FileTree.Row> onLongClick) {
       Context context = binding.getRoot().getContext();
       int indent = context.getResources().getDimensionPixelSize(R.dimen.tree_indent) * row.depth();
       ViewGroup.LayoutParams params = binding.indent.getLayoutParams();
@@ -63,11 +70,17 @@ final class FileTreeAdapter extends ListAdapter<FileTree.Row, FileTreeAdapter.Ho
       binding.indent.setLayoutParams(params);
 
       boolean directory = row.node().isDirectory();
-      binding.chevron.setVisibility(directory ? android.view.View.VISIBLE : android.view.View.INVISIBLE);
+      binding.chevron.setVisibility(directory ? View.VISIBLE : View.INVISIBLE);
       binding.chevron.setRotation(row.isExpanded() ? 90f : 0f);
       binding.icon.setImageResource(directory ? R.drawable.ic_tree_folder : R.drawable.ic_tree_file);
       binding.name.setText(row.node().name());
       binding.getRoot().setOnClickListener(v -> onClick.accept(row));
+      binding.getRoot()
+          .setOnLongClickListener(
+              v -> {
+                onLongClick.accept(v, row);
+                return true;
+              });
     }
   }
 }

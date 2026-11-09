@@ -2,5 +2,15 @@
 <resources>
     <string name="file_tree_empty">This project has no files yet.</string>
     <string name="tree_error_not_found">The project no longer exists.</string>
-    <string name="tree_error_storage">The files could not be read. Check the storage and try again.</string>
+    <string name="tree_error_exists">A file or folder with this name already exists.</string>
+    <string name="tree_error_storage">The files could not be read or changed. Check the storage and try again.</string>
+    <string name="tree_error_invalid_name">Enter a name without slashes, and not . or ..</string>
+
+    <string name="tree_new_file">New file</string>
+    <string name="tree_new_folder">New folder</string>
+    <string name="tree_name_hint">Name</string>
+    <string name="tree_create">Create</string>
+    <string name="tree_delete">Delete</string>
+    <string name="tree_delete_file_message">Delete the file %1$s? This cannot be undone.</string>
+    <string name="tree_delete_folder_message">Delete the folder %1$s and everything inside it? This cannot be undone.</string>
 </resources>

@@ -8,11 +8,9 @@ import org.codirex.asm.domain.project.ProjectName;
  */
 public interface FileTreeNavigator {
 
-  /**
-   * The user tapped a file.
-   *
-   * @param project the open project
-   * @param relativePath the file's path inside the project, with {@code /} as separator
-   */
+  /** The user picked a file, or created one, to open. */
   void openFile(ProjectName project, String relativePath);
+
+  /** A file or folder was deleted. Anything showing it, or something inside it, must let go. */
+  void pathDeleted(ProjectName project, String relativePath);
 }
