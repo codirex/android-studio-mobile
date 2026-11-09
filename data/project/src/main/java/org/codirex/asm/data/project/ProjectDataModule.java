@@ -8,6 +8,7 @@ import dagger.hilt.InstallIn;
 import dagger.hilt.android.qualifiers.ApplicationContext;
 import dagger.hilt.components.SingletonComponent;
 import java.io.File;
+import org.codirex.asm.domain.editor.ProjectDocuments;
 import org.codirex.asm.domain.filetree.ProjectFiles;
 import org.codirex.asm.domain.project.ProjectRepository;
 
@@ -21,6 +22,9 @@ abstract class ProjectDataModule {
 
   @Binds
   abstract ProjectFiles bindProjectFiles(FileProjectFiles impl);
+
+  @Binds
+  abstract ProjectDocuments bindProjectDocuments(FileProjectDocuments impl);
 
   /** Projects live in the app's private directory (ADR-0012). */
   @Provides

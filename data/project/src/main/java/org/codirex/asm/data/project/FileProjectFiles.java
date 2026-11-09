@@ -14,37 +14,22 @@ import org.codirex.asm.domain.project.ProjectException;
 import org.codirex.asm.domain.project.ProjectException.Reason;
 import org.codirex.asm.domain.project.ProjectName;
 
-/**
- * Reads project files from the projects directory. Every path is resolved through {@link
- * FileOperations#resolve}, so a path with {@code ..} or a symbolic link cannot leave the project.
- * Folders that are not projects (no metadata) are refused.
- */
+/** Lists project folders. Paths are resolved by {@link ProjectLocator}, so they stay inside the project. */
 @Singleton
 final class FileProjectFiles implements ProjectFiles {
 
   private final FileOperations files;
-  private final File root;
+  private final ProjectLocator locator;
 
   @Inject
-  FileProjectFiles(FileOperations files, @ProjectsRoot File root) {
+  FileProjectFiles(FileOperations files, ProjectLocator locator) {
     this.files = files;
-    this.root = root;
+    this.locator = locator;
   }
 
   @Override
   public List<TreeNode> list(ProjectName project, String relativePath) throws ProjectException {
-    File projectDirectory;
-    File directory;
-    try {
-      projectDirectory = files.resolve(root, project.value());
-      directory =
-          relativePath.isEmpty() ? projectDirectory : files.resolve(projectDirectory, relativePath);
-    } catch (IOException e) {
-      throw new ProjectException(Reason.STORAGE, "cannot locate " + project + "/" + relativePath, e);
-    }
-    if (!new File(projectDirectory, FileProjectRepository.METADATA_PATH).isFile()) {
-      throw new ProjectException(Reason.NOT_FOUND, "no such project: " + project);
-    }
+    File directory = locator.resolve(project, relativePath);
 
     List<FileEntry> entries;
     try {

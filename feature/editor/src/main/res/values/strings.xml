@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="editor_empty">Open a file from the file tree.</string>
+    <string name="editor_show_files">Files</string>
+    <string name="editor_close_tab">Close tab</string>
+    <string name="editor_tab_unsaved">%1$s •</string>
+
+    <string name="editor_error_not_found">The file no longer exists.</string>
+    <string name="editor_error_not_allowed">This file belongs to the IDE and cannot be opened or changed.</string>
+    <string name="editor_error_not_text">This file is not a text file.</string>
+    <string name="editor_error_too_large">This file is larger than 2 MB and cannot be opened in the editor.</string>
+    <string name="editor_error_storage">The file could not be read or saved. Check the storage and try again.</string>
+</resources>

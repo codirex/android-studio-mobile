@@ -3,11 +3,11 @@ package org.codirex.asm;
 import android.os.Bundle;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.material.snackbar.Snackbar;
+import androidx.fragment.app.Fragment;
 import dagger.hilt.android.AndroidEntryPoint;
 import org.codirex.asm.databinding.ActivityMainBinding;
 import org.codirex.asm.domain.project.ProjectName;
-import org.codirex.asm.feature.filetree.FileTreeFragment;
+import org.codirex.asm.feature.editor.EditorNavigator;
 import org.codirex.asm.feature.filetree.FileTreeNavigator;
 import org.codirex.asm.feature.project.CreateProjectFragment;
 import org.codirex.asm.feature.project.ProjectListFragment;
@@ -19,7 +19,7 @@ import org.codirex.asm.feature.project.ProjectNavigator;
  */
 @AndroidEntryPoint
 public final class MainActivity extends AppCompatActivity
-    implements ProjectNavigator, FileTreeNavigator {
+    implements ProjectNavigator, FileTreeNavigator, EditorNavigator {
 
   private ActivityMainBinding binding;
 
@@ -61,7 +61,7 @@ public final class MainActivity extends AppCompatActivity
   public void showProject(ProjectName name) {
     getSupportFragmentManager()
         .beginTransaction()
-        .replace(R.id.container, FileTreeFragment.newInstance(name))
+        .replace(R.id.container, WorkspaceFragment.newInstance(name))
         .addToBackStack(null)
         .commit();
   }
@@ -73,12 +73,24 @@ public final class MainActivity extends AppCompatActivity
 
   @Override
   public void openFile(ProjectName project, String relativePath) {
-    // The editor does not exist yet; this is replaced when it does.
-    Snackbar.make(
-            binding.getRoot(),
-            getString(R.string.opening_projects_soon, relativePath),
-            Snackbar.LENGTH_SHORT)
-        .show();
+    WorkspaceFragment workspace = workspace();
+    if (workspace != null) {
+      workspace.openFile(relativePath);
+    }
+  }
+
+  @Override
+  public void showFileTree() {
+    WorkspaceFragment workspace = workspace();
+    if (workspace != null) {
+      workspace.showFiles();
+    }
+  }
+
+  /** The open project's workspace, or null when another screen is shown. */
+  private WorkspaceFragment workspace() {
+    Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
+    return current instanceof WorkspaceFragment ? (WorkspaceFragment) current : null;
   }
 
   private void updateUpButton() {

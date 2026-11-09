@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.codirex.asm.core.fs.FileOperations;
-import org.codirex.asm.domain.filetree.ProjectFiles;
 import org.codirex.asm.domain.filetree.TreeNode;
 import org.codirex.asm.domain.project.PackageName;
 import org.codirex.asm.domain.project.ProjectException;
@@ -36,7 +35,7 @@ public final class FileProjectFilesTest {
     FileProjectRepository repository = new FileProjectRepository(files, root, () -> 1L);
     repository.create(
         new ProjectSpec(demo, PackageName.of("org.codirex.demo"), ProjectType.APPLICATION));
-    projectFiles = new FileProjectFiles(files, root);
+    projectFiles = new FileProjectFiles(files, new ProjectLocator(files, root));
   }
 
   private static List<String> describe(List<TreeNode> nodes) {

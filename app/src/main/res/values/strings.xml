@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Android Studio Mobile</string>
-    <string name="opening_projects_soon">Opening %1$s arrives with the editor.</string>
 </resources>

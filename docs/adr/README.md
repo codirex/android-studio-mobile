@@ -19,6 +19,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0011](0011-ports-and-file-access.md) | Domain ports and low-level file access | Proposed |
 | [0012](0012-project-storage.md) | Where projects live and how they are identified | Proposed |
 | [0013](0013-open-project-and-file-tree.md) | Opening a project and browsing its files | Proposed |
+| [0014](0014-editor-tabs-and-workspace.md) | The editor, its tabs and the project workspace | Proposed |
 
 ## Template
 
