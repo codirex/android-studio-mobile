@@ -18,6 +18,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0010](0010-ui-foundation.md) | UI foundation | Proposed |
 | [0011](0011-ports-and-file-access.md) | Domain ports and low-level file access | Proposed |
 | [0012](0012-project-storage.md) | Where projects live and how they are identified | Proposed |
+| [0013](0013-open-project-and-file-tree.md) | Opening a project and browsing its files | Proposed |
 
 ## Template
 

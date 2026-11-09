@@ -7,6 +7,8 @@ import com.google.android.material.snackbar.Snackbar;
 import dagger.hilt.android.AndroidEntryPoint;
 import org.codirex.asm.databinding.ActivityMainBinding;
 import org.codirex.asm.domain.project.ProjectName;
+import org.codirex.asm.feature.filetree.FileTreeFragment;
+import org.codirex.asm.feature.filetree.FileTreeNavigator;
 import org.codirex.asm.feature.project.CreateProjectFragment;
 import org.codirex.asm.feature.project.ProjectListFragment;
 import org.codirex.asm.feature.project.ProjectNavigator;
@@ -16,7 +18,8 @@ import org.codirex.asm.feature.project.ProjectNavigator;
  * contracts (ADR-0010), so features never reference each other.
  */
 @AndroidEntryPoint
-public final class MainActivity extends AppCompatActivity implements ProjectNavigator {
+public final class MainActivity extends AppCompatActivity
+    implements ProjectNavigator, FileTreeNavigator {
 
   private ActivityMainBinding binding;
 
@@ -56,16 +59,26 @@ public final class MainActivity extends AppCompatActivity implements ProjectNavi
 
   @Override
   public void showProject(ProjectName name) {
-    Snackbar.make(
-            binding.getRoot(),
-            getString(R.string.opening_projects_soon, name.value()),
-            Snackbar.LENGTH_SHORT)
-        .show();
+    getSupportFragmentManager()
+        .beginTransaction()
+        .replace(R.id.container, FileTreeFragment.newInstance(name))
+        .addToBackStack(null)
+        .commit();
   }
 
   @Override
   public void onProjectCreated() {
     getSupportFragmentManager().popBackStack();
+  }
+
+  @Override
+  public void openFile(ProjectName project, String relativePath) {
+    // The editor does not exist yet; this is replaced when it does.
+    Snackbar.make(
+            binding.getRoot(),
+            getString(R.string.opening_projects_soon, relativePath),
+            Snackbar.LENGTH_SHORT)
+        .show();
   }
 
   private void updateUpButton() {

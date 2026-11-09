@@ -19,8 +19,12 @@ dependencies {
     implementation(project(":core:preferences"))
     implementation(project(":core:ui"))
 
+    // Hilt generates code in the app that mentions the domain ports, so their modules must be visible here.
+    implementation(project(":domain:filetree"))
+
     // The app wires data modules to the domain ports through Hilt; features never see them.
     implementation(project(":data:project"))
+    implementation(project(":feature:filetree"))
     implementation(project(":feature:project"))
 
     implementation(libs.hilt.android)

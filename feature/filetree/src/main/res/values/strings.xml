@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="file_tree_empty">This project has no files yet.</string>
+    <string name="tree_error_not_found">The project no longer exists.</string>
+    <string name="tree_error_storage">The files could not be read. Check the storage and try again.</string>
+</resources>
