@@ -11,6 +11,8 @@ android {
 dependencies {
     // ProjectNavigator mentions ProjectName, so the host app sees the domain types.
     api(project(":domain:project"))
+    // The create screen uses the ProjectCreator use case; Hilt-generated code in the app mentions it.
+    api(project(":domain:template"))
 
     implementation(project(":core:concurrency"))
     implementation(project(":core:ui"))

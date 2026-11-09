@@ -9,22 +9,25 @@ import org.codirex.asm.core.concurrency.UiStateHolder;
 import org.codirex.asm.domain.project.PackageName;
 import org.codirex.asm.domain.project.Project;
 import org.codirex.asm.domain.project.ProjectName;
-import org.codirex.asm.domain.project.ProjectRepository;
 import org.codirex.asm.domain.project.ProjectSpec;
 import org.codirex.asm.domain.project.ProjectType;
+import org.codirex.asm.domain.template.ProjectCreator;
 
-/** Creates a project off the main thread. All methods are called on the main thread. */
+/**
+ * Creates a project, with the first files of its type, off the main thread. All methods are called
+ * on the main thread.
+ */
 @HiltViewModel
 final class CreateProjectViewModel extends RealmViewModel {
 
-  private final ProjectRepository repository;
+  private final ProjectCreator creator;
   private final UiStateHolder<CreateProjectState> state =
       new UiStateHolder<>(CreateProjectState.idle());
 
   @Inject
-  CreateProjectViewModel(RealmFactory factory, ProjectRepository repository) {
+  CreateProjectViewModel(RealmFactory factory, ProjectCreator creator) {
     super(factory);
-    this.repository = repository;
+    this.creator = creator;
   }
 
   LiveData<CreateProjectState> state() {
@@ -46,7 +49,7 @@ final class CreateProjectViewModel extends RealmViewModel {
         new ProjectSpec(ProjectName.of(name), PackageName.of(packageName), type);
     state.set(CreateProjectState.inProgress());
     this.<Project>runAsync(
-        checkpoint -> repository.create(spec),
+        checkpoint -> creator.create(spec),
         outcome -> {
           if (outcome.isSuccess()) {
             state.set(CreateProjectState.created());

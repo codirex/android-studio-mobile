@@ -1,0 +1,17 @@
+plugins {
+    id("asm.android.library")
+}
+
+android {
+    namespace = "org.codirex.asm.data.template"
+}
+
+dependencies {
+    implementation(project(":domain:project"))
+    implementation(project(":domain:template"))
+
+    implementation(libs.hilt.android)
+    annotationProcessor(libs.hilt.compiler)
+
+    testImplementation(libs.junit4)
+}

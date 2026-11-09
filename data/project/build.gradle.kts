@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":domain:project"))
     implementation(project(":domain:filetree"))
     implementation(project(":domain:editor"))
+    implementation(project(":domain:template"))
     implementation(project(":core:fs"))
 
     implementation(libs.hilt.android)

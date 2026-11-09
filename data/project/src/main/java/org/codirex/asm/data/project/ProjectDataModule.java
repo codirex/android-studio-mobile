@@ -11,6 +11,7 @@ import java.io.File;
 import org.codirex.asm.domain.editor.ProjectDocuments;
 import org.codirex.asm.domain.filetree.ProjectFiles;
 import org.codirex.asm.domain.project.ProjectRepository;
+import org.codirex.asm.domain.template.ProjectScaffold;
 
 /** Hilt wiring for {@code data:project}. Installed automatically in the application graph. */
 @Module
@@ -25,6 +26,9 @@ abstract class ProjectDataModule {
 
   @Binds
   abstract ProjectDocuments bindProjectDocuments(FileProjectDocuments impl);
+
+  @Binds
+  abstract ProjectScaffold bindProjectScaffold(FileProjectScaffold impl);
 
   /** Projects live in the app's private directory (ADR-0012). */
   @Provides
