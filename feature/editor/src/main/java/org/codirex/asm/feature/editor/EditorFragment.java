@@ -15,11 +15,14 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 import dagger.hilt.android.AndroidEntryPoint;
 import io.github.rosemoe.sora.event.ContentChangeEvent;
+import io.github.rosemoe.sora.lang.Language;
+import io.github.rosemoe.sora.langs.java.JavaLanguage;
 import io.github.rosemoe.sora.widget.schemes.SchemeDarcula;
 import io.github.rosemoe.sora.widget.schemes.SchemeGitHub;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import org.codirex.asm.domain.editor.SourceLanguage;
 import org.codirex.asm.domain.project.ProjectName;
 import org.codirex.asm.feature.editor.databinding.FragmentEditorBinding;
 import org.codirex.asm.feature.editor.databinding.ItemEditorTabBinding;
@@ -44,6 +47,7 @@ public final class EditorFragment extends Fragment {
   private String currentPath;
 
   private int appliedRevision = -1;
+  private SourceLanguage appliedLanguage = SourceLanguage.PLAIN;
   private List<String> renderedPaths = Collections.emptyList();
   private Set<String> renderedDirty = Collections.emptySet();
   private boolean rendering;
@@ -107,9 +111,11 @@ public final class EditorFragment extends Fragment {
   public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
     viewModel = new ViewModelProvider(this).get(EditorViewModel.class);
 
-    // A new view starts empty, whatever the previous one showed.
+    // A new view starts empty, whatever the previous one showed. A new editor widget has no
+    // language, which behaves as plain text.
     currentPath = null;
     appliedRevision = -1;
+    appliedLanguage = SourceLanguage.PLAIN;
     renderedPaths = Collections.emptyList();
     renderedDirty = Collections.emptySet();
 
@@ -186,6 +192,13 @@ public final class EditorFragment extends Fragment {
     binding.editor.setVisibility(hasTabs ? View.VISIBLE : View.GONE);
     binding.empty.setVisibility(hasTabs ? View.GONE : View.VISIBLE);
 
+    // The language comes first, so the text is analysed with it. A rename can change it without
+    // changing the text.
+    SourceLanguage language = SourceLanguage.forPath(state.shownPath());
+    if (language != appliedLanguage) {
+      appliedLanguage = language;
+      binding.editor.setEditorLanguage(languageFor(language));
+    }
     if (state.revision() != appliedRevision) {
       appliedRevision = state.revision();
       binding.editor.setText(state.shownText());
@@ -201,6 +214,18 @@ public final class EditorFragment extends Fragment {
       Snackbar.make(binding.getRoot(), EditorErrors.reason(state.error()), Snackbar.LENGTH_LONG)
           .show();
       viewModel.errorHandled();
+    }
+  }
+
+  /** The Sora language for a source language; null makes the editor show plain text. */
+  @Nullable
+  private static Language languageFor(SourceLanguage language) {
+    switch (language) {
+      case JAVA:
+        return new JavaLanguage();
+      case PLAIN:
+      default:
+        return null;
     }
   }
 

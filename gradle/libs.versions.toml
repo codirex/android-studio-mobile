@@ -24,8 +24,9 @@ androidx-preference = { module = "androidx.preference:preference", version.ref =
 
 material = { module = "com.google.android.material:material", version.ref = "material" }
 
-# The code editor widget (ADR-0005). Only feature:editor uses it.
+# The code editor widget and its languages (ADR-0005, ADR-0016). Only feature:editor uses them.
 sora-editor = { module = "io.github.rosemoe:editor", version.ref = "sora" }
+sora-language-java = { module = "io.github.rosemoe:language-java", version.ref = "sora" }
 
 junit4 = { module = "junit:junit", version.ref = "junit" }
 

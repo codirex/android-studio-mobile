@@ -17,6 +17,7 @@ dependencies {
     implementation(project(":core:ui"))
 
     implementation(libs.sora.editor)
+    implementation(libs.sora.language.java)
 
     implementation(libs.hilt.android)
     annotationProcessor(libs.hilt.compiler)

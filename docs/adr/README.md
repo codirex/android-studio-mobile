@@ -21,6 +21,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0013](0013-open-project-and-file-tree.md) | Opening a project and browsing its files | Proposed |
 | [0014](0014-editor-tabs-and-workspace.md) | The editor, its tabs and the project workspace | Proposed |
 | [0015](0015-create-and-delete-entries.md) | Creating, renaming and deleting files and folders | Proposed |
+| [0016](0016-syntax-highlighting.md) | Syntax highlighting | Proposed |
 
 ## Template
 
