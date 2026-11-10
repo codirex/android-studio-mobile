@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="file_tree_empty">لا توجد ملفات في هذا المشروع بعد.</string>
+    <string name="tree_error_not_found">المشروع لم يعد موجودًا.</string>
+    <string name="tree_error_exists">يوجد ملف أو مجلد بهذا الاسم من قبل.</string>
+    <string name="tree_error_storage">تعذرت قراءة الملفات أو تغييرها. تحقق من التخزين وحاول مرة أخرى.</string>
+    <string name="tree_error_invalid_name">أدخل اسمًا بدون شرطات مائلة، وليس . أو ..</string>
+
+    <string name="tree_new_file">ملف جديد</string>
+    <string name="tree_new_folder">مجلد جديد</string>
+    <string name="tree_name_hint">الاسم</string>
+    <string name="tree_create">إنشاء</string>
+    <string name="tree_rename">إعادة تسمية</string>
+    <string name="tree_delete">حذف</string>
+    <string name="tree_delete_file_message">حذف الملف %1$s؟ لا يمكن التراجع عن هذا.</string>
+    <string name="tree_delete_folder_message">حذف المجلد %1$s وكل ما بداخله؟ لا يمكن التراجع عن هذا.</string>
+</resources>

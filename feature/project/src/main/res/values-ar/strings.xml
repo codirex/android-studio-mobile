@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="project_list_title">المشاريع</string>
+    <string name="project_list_empty">لا توجد مشاريع بعد. اضغط على «مشروع جديد» لإنشاء مشروع.</string>
+    <string name="project_new">مشروع جديد</string>
+    <string name="project_details">%1$s · %2$s</string>
+
+    <string name="project_create_title">مشروع جديد</string>
+    <string name="project_name_label">اسم المشروع</string>
+    <string name="project_package_label">اسم الحزمة</string>
+    <string name="project_package_hint">com.example.myapp</string>
+    <string name="project_type_label">نوع المشروع</string>
+    <string name="project_template_label">القالب</string>
+    <string name="project_create">إنشاء</string>
+
+    <string name="type_application">تطبيق</string>
+    <string name="type_android_library">مكتبة أندرويد</string>
+    <string name="type_java_library">مكتبة جافا</string>
+    <string name="type_gradle_plugin">إضافة Gradle</string>
+
+    <string name="project_delete_title">حذف المشروع؟</string>
+    <string name="project_delete_message">سيتم حذف «%1$s» وجميع ملفاته. لا يمكن التراجع عن هذا.</string>
+    <string name="project_delete_confirm">حذف</string>
+
+    <string name="error_name_empty">أدخل اسم المشروع.</string>
+    <string name="error_name_too_long">الاسم طويل جدًا. استخدم 64 حرفًا كحد أقصى.</string>
+    <string name="error_name_reserved">هذا الاسم محجوز.</string>
+    <string name="error_name_character">الاسم يحتوي على حرف غير مسموح: / \\ : * ? \" &lt; &gt; |، أو مسافة أو نقطة في النهاية، أو مسافة في البداية.</string>
+    <string name="error_name_exists">يوجد مشروع بهذا الاسم من قبل.</string>
+
+    <string name="error_package_empty">أدخل اسم الحزمة.</string>
+    <string name="error_package_too_few_segments">استخدم جزأين على الأقل مفصولين بنقطة، مثل com.example.</string>
+    <string name="error_package_segment_start">يجب أن يبدأ كل جزء بحرف من a إلى z.</string>
+    <string name="error_package_character">استخدم حروفًا وأرقامًا وشرطات سفلية فقط في كل جزء.</string>
+    <string name="error_package_keyword">أحد أجزاء اسم الحزمة كلمة محجوزة في جافا.</string>
+
+    <string name="error_invalid">هذه القيمة غير صالحة.</string>
+    <string name="error_storage">فشل التخزين. تحقق من المساحة الحرة وحاول مرة أخرى.</string>
+    <string name="error_invalid_metadata">ملف إعدادات هذا المشروع تالف أو من إصدار أحدث.</string>
+    <string name="error_not_found">المشروع لم يعد موجودًا.</string>
+</resources>

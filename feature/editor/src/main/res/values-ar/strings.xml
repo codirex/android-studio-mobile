@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="editor_empty">افتح ملفًا من شجرة الملفات.</string>
+    <string name="editor_show_files">الملفات</string>
+    <string name="editor_close_tab">إغلاق التبويب</string>
+    <string name="editor_tab_unsaved">%1$s •</string>
+
+    <string name="editor_error_not_found">الملف لم يعد موجودًا.</string>
+    <string name="editor_error_not_allowed">هذا الملف تابع للـ IDE ولا يمكن فتحه أو تغييره.</string>
+    <string name="editor_error_not_text">هذا الملف ليس ملفًا نصيًا.</string>
+    <string name="editor_error_too_large">حجم هذا الملف أكبر من 2 ميجابايت ولا يمكن فتحه في المحرر.</string>
+    <string name="editor_error_storage">تعذرت قراءة الملف أو حفظه. تحقق من التخزين وحاول مرة أخرى.</string>
+</resources>
