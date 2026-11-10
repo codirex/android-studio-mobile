@@ -27,33 +27,31 @@ public final class MoveTargetsTest {
   }
 
   @Test
-  public void aFolderCannotGoIntoItselfOrItsSubfolders() {
-    assertEquals(
-        Arrays.asList("", "Assets", "docs"),
-        MoveTargets.of(FOLDERS, "src", true) .isEmpty()
-            ? Collections.<String>emptyList()
-            : MoveTargets.of(FOLDERS, "src/main", true).subList(0, 3));
-  }
-
-  @Test
-  public void aFolderAtTheRootDoesNotOfferTheRoot() {
-    assertEquals(
-        Arrays.asList("Assets", "docs"), MoveTargets.of(FOLDERS, "src", true));
+  public void aFolderAtTheRootCannotGoIntoItselfOrItsSubfolders() {
+    // "src" is at the root, so the root is not offered; src, src/main and src/main/res are inside it.
+    assertEquals(Arrays.asList("Assets", "docs"), MoveTargets.of(FOLDERS, "src", true));
   }
 
   @Test
   public void aFolderInsideAnotherOffersTheRootAndTheOthers() {
+    // src is its parent, src/main is itself, src/main/res is inside it.
     assertEquals(
-        Arrays.asList("", "Assets", "docs", "src"), MoveTargets.of(FOLDERS, "src/main", true));
+        Arrays.asList("", "Assets", "docs"), MoveTargets.of(FOLDERS, "src/main", true));
   }
 
   @Test
-  public void aFileMayGoIntoAFolderThatOnlyStartsLikeItsName() {
-    List<String> folders = Arrays.asList("app", "app2", "app/app2");
-    assertEquals(Arrays.asList("", "app2", "app/app2"), MoveTargets.of(folders, "app", false) .isEmpty()
-        ? Collections.<String>emptyList()
-        : Arrays.asList("", "app2", "app/app2"));
-    assertEquals(Arrays.asList("app2"), MoveTargets.of(Arrays.asList("app", "app2"), "app", true));
+  public void aFolderMayGoIntoOneThatOnlyStartsLikeItsName() {
+    // app2 starts with "app" but is not inside it.
+    assertEquals(
+        Arrays.asList("app2"), MoveTargets.of(Arrays.asList("app", "app2"), "app", true));
+  }
+
+  @Test
+  public void aFileNamedLikeAFolderIsNotTreatedAsThatFolder() {
+    // A file is never a target, so only folders of the same name prefix are filtered for folders.
+    assertEquals(
+        Arrays.asList("app", "app/app2", "app2"),
+        MoveTargets.of(Arrays.asList("app", "app2", "app/app2"), "app", false));
   }
 
   @Test
