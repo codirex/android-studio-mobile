@@ -72,9 +72,14 @@ public final class FileProjectScaffoldTest {
   }
 
   @Test
-  public void theInternalFolderIsOffLimits() {
+  public void theInternalFolderIsOffLimits() throws Exception {
+    String before = files.readText(new File(root, "Demo/.asm/project.properties"));
+
     assertWriteFails(Reason.UNSAFE_PATH, new TemplateFile(".asm/project.properties", "broken"));
     assertWriteFails(Reason.UNSAFE_PATH, new TemplateFile(".asm/new.txt", "x"));
+
+    assertEquals(before, files.readText(new File(root, "Demo/.asm/project.properties")));
+    assertFalse(new File(root, "Demo/.asm/new.txt").exists());
   }
 
   @Test
@@ -94,7 +99,5 @@ public final class FileProjectScaffoldTest {
     } catch (TemplateException e) {
       assertEquals(expected, e.reason());
     }
-    assertTrue(new File(root, "Demo/.asm/project.properties").isFile());
-    assertEquals("format", files.readTextOrFail(new File(root, "Demo/.asm/project.properties")).substring(0, 0).isEmpty() ? "format" : "");
   }
 }
