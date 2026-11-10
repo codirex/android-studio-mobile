@@ -15,6 +15,7 @@ import org.codirex.asm.core.concurrency.RealmViewModel;
 import org.codirex.asm.core.concurrency.UiStateHolder;
 import org.codirex.asm.domain.editor.EditorTabs;
 import org.codirex.asm.domain.editor.ProjectDocuments;
+import org.codirex.asm.domain.editor.WorkspaceStore;
 import org.codirex.asm.domain.project.ProjectName;
 
 /**
@@ -23,7 +24,8 @@ import org.codirex.asm.domain.project.ProjectName;
  * arguments.
  *
  * <p>The text of every open document is kept here, as last loaded or handed over by {@link
- * #snapshot}. The editor widget holds the live text of the shown document only.
+ * #snapshot}. The editor widget holds the live text of the shown document only. The open tabs are
+ * restored from the project when this view model is created, and saved after every change (ADR-0018).
  */
 @HiltViewModel
 final class EditorViewModel extends RealmViewModel {
@@ -32,6 +34,7 @@ final class EditorViewModel extends RealmViewModel {
   static final String ARG_PROJECT = "project";
 
   private final ProjectDocuments documents;
+  private final WorkspaceStore workspace;
   private final ProjectName project;
   private final UiStateHolder<EditorState> state = new UiStateHolder<>(EditorState.initial());
 
@@ -46,12 +49,23 @@ final class EditorViewModel extends RealmViewModel {
 
   private final Map<String, String> queued = new HashMap<>();
 
+  /** Whether a save of the tab list is running, and the newest list waiting behind it. */
+  private boolean savingTabs;
+
+  private EditorTabs queuedTabs;
+
   @Inject
-  EditorViewModel(RealmFactory factory, ProjectDocuments documents, SavedStateHandle arguments) {
+  EditorViewModel(
+      RealmFactory factory,
+      ProjectDocuments documents,
+      WorkspaceStore workspace,
+      SavedStateHandle arguments) {
     super(factory);
     this.documents = documents;
+    this.workspace = workspace;
     String name = arguments.get(ARG_PROJECT);
     this.project = ProjectName.of(name);
+    restoreTabs();
   }
 
   LiveData<EditorState> state() {
@@ -70,9 +84,9 @@ final class EditorViewModel extends RealmViewModel {
     if (!wasActive) {
       s = show(s, path);
     }
-    state.set(s);
+    setState(s);
     if (!alreadyOpen) {
-      load(path);
+      load(path, false);
     }
   }
 
@@ -82,14 +96,14 @@ final class EditorViewModel extends RealmViewModel {
     if (!s.tabs().isOpen(path) || path.equals(s.tabs().activePath())) {
       return;
     }
-    state.set(show(s.withTabs(s.tabs().select(path)), path));
+    setState(show(s.withTabs(s.tabs().select(path)), path));
   }
 
   /** Closes a tab. The screen hands over the text with {@link #snapshot} first, which saves it. */
   void close(String path) {
     EditorState s = state.get();
     if (s.tabs().isOpen(path)) {
-      state.set(removeTab(s, path));
+      setState(removeTab(s, path));
     }
   }
 
@@ -109,7 +123,7 @@ final class EditorViewModel extends RealmViewModel {
       }
     }
     if (changed) {
-      state.set(s);
+      setState(s);
     }
   }
 
@@ -130,9 +144,9 @@ final class EditorViewModel extends RealmViewModel {
     remapKeys(buffers, from, to);
     remapKeys(edits, from, to);
     remapKeys(queued, from, to);
-    state.set(before.renamed(from, to));
+    setState(before.renamed(from, to));
     for (String path : reload) {
-      load(path);
+      load(path, false);
     }
   }
 
@@ -144,7 +158,7 @@ final class EditorViewModel extends RealmViewModel {
     }
     edits.put(path, edits.containsKey(path) ? edits.get(path) + 1 : 1);
     if (!s.isDirty(path)) {
-      state.set(s.dirtied(path));
+      setState(s.dirtied(path));
     }
   }
 
@@ -166,7 +180,66 @@ final class EditorViewModel extends RealmViewModel {
 
   /** The screen showed the error; do not show it again. */
   void errorHandled() {
-    state.set(state.get().errorHandled());
+    setState(state.get().errorHandled());
+  }
+
+  /**
+   * Publishes a new state. When the tab list changed, the new list is saved to the project, so the
+   * next time the project is opened it shows the same tabs.
+   */
+  private void setState(EditorState next) {
+    EditorTabs before = state.get().tabs();
+    state.set(next);
+    if (!next.tabs().equals(before)) {
+      saveTabs(next.tabs());
+    }
+  }
+
+  /** Saves of the tab list never overlap; while one runs only the newest list waits. */
+  private void saveTabs(EditorTabs tabs) {
+    if (savingTabs) {
+      queuedTabs = tabs;
+      return;
+    }
+    savingTabs = true;
+    this.<Boolean>runAsync(
+        checkpoint -> {
+          workspace.save(project, tabs);
+          return Boolean.TRUE;
+        },
+        outcome -> {
+          // A failed save is ignored: the next change of the tabs saves again.
+          savingTabs = false;
+          EditorTabs next = queuedTabs;
+          queuedTabs = null;
+          if (next != null) {
+            saveTabs(next);
+          }
+        });
+  }
+
+  /**
+   * Reads the saved tabs and opens them, unless the user opened something in the meantime. A file
+   * that cannot be opened any more is dropped without a message.
+   */
+  private void restoreTabs() {
+    this.<EditorTabs>runAsync(
+        checkpoint -> workspace.load(project),
+        outcome -> {
+          EditorTabs saved = outcome.isSuccess() ? outcome.valueOrNull() : null;
+          EditorState s = state.get();
+          if (saved == null || saved.paths().isEmpty() || !s.tabs().paths().isEmpty()) {
+            return;
+          }
+          s = s.withTabs(saved);
+          for (String path : saved.paths()) {
+            s = s.loadingStarted(path);
+          }
+          setState(show(s, saved.activePath()));
+          for (String path : saved.paths()) {
+            load(path, true);
+          }
+        });
   }
 
   private static <V> void remapKeys(Map<String, V> map, String from, String to) {
@@ -197,7 +270,11 @@ final class EditorViewModel extends RealmViewModel {
     return result;
   }
 
-  private void load(String path) {
+  /**
+   * Reads a document in the background. A failure closes its tab; it is reported to the user unless
+   * {@code quiet}, which is the case for tabs restored from an earlier session.
+   */
+  private void load(String path, boolean quiet) {
     this.<String>runAsync(
         checkpoint -> documents.read(project, path),
         outcome -> {
@@ -212,11 +289,12 @@ final class EditorViewModel extends RealmViewModel {
             if (path.equals(s.tabs().activePath())) {
               s = s.shown(path, text);
             }
-            state.set(s);
+            setState(s);
           } else if (outcome.isFailure()) {
-            state.set(removeTab(s, path).failed(Failures.reasonOf(outcome.failureOrNull())));
+            EditorState closed = removeTab(s, path);
+            setState(quiet ? closed : closed.failed(Failures.reasonOf(outcome.failureOrNull())));
           } else {
-            state.set(removeTab(s, path));
+            setState(removeTab(s, path));
           }
         });
   }
@@ -241,10 +319,10 @@ final class EditorViewModel extends RealmViewModel {
             int now = edits.containsKey(path) ? edits.get(path) : 0;
             // Clean only if nothing was typed while the write ran.
             if (now == version && s.isDirty(path)) {
-              state.set(s.cleaned(path));
+              setState(s.cleaned(path));
             }
           } else if (outcome.isFailure()) {
-            state.set(s.failed(Failures.reasonOf(outcome.failureOrNull())));
+            setState(s.failed(Failures.reasonOf(outcome.failureOrNull())));
           }
           String next = queued.remove(path);
           if (next != null) {

@@ -30,6 +30,25 @@ public final class EditorTabs {
   }
 
   /**
+   * Tabs read back from storage, which may be damaged: null, empty and repeated paths are dropped
+   * and the order of the rest is kept. {@code active} is used if it is among them, otherwise the
+   * last tab is active. No paths left gives {@link #empty()}.
+   */
+  public static EditorTabs restore(List<String> paths, String active) {
+    List<String> unique = new ArrayList<>();
+    for (String path : paths) {
+      if (path != null && !path.isEmpty() && !unique.contains(path)) {
+        unique.add(path);
+      }
+    }
+    if (unique.isEmpty()) {
+      return EMPTY;
+    }
+    String chosen = active != null && unique.contains(active) ? active : unique.get(unique.size() - 1);
+    return new EditorTabs(unique, chosen);
+  }
+
+  /**
    * Where a path ends up when {@code from} is renamed to {@code to}: {@code to} itself if {@code
    * path} is {@code from}, the same path under {@code to} if it lies inside the folder {@code from},
    * and {@code path} unchanged otherwise. A name that only starts like {@code from}, as {@code

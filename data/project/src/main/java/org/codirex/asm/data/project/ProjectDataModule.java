@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext;
 import dagger.hilt.components.SingletonComponent;
 import java.io.File;
 import org.codirex.asm.domain.editor.ProjectDocuments;
+import org.codirex.asm.domain.editor.WorkspaceStore;
 import org.codirex.asm.domain.filetree.ProjectFiles;
 import org.codirex.asm.domain.project.ProjectRepository;
 import org.codirex.asm.domain.template.ProjectScaffold;
@@ -29,6 +30,9 @@ abstract class ProjectDataModule {
 
   @Binds
   abstract ProjectScaffold bindProjectScaffold(FileProjectScaffold impl);
+
+  @Binds
+  abstract WorkspaceStore bindWorkspaceStore(FileWorkspaceStore impl);
 
   /** Projects live in the app's private directory (ADR-0012). */
   @Provides

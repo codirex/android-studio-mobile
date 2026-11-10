@@ -23,6 +23,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0015](0015-create-and-delete-entries.md) | Creating, renaming and deleting files and folders | Proposed |
 | [0016](0016-syntax-highlighting.md) | Syntax highlighting | Proposed |
 | [0017](0017-project-templates.md) | Project templates | Proposed |
+| [0018](0018-restore-open-tabs.md) | Restoring the open tabs | Proposed |
 
 ## Template
 
