@@ -10,6 +10,7 @@
     <string name="project_package_label">Package name</string>
     <string name="project_package_hint">com.example.myapp</string>
     <string name="project_type_label">Project type</string>
+    <string name="project_template_label">Template</string>
     <string name="project_create">Create</string>
 
     <string name="type_application">Application</string>

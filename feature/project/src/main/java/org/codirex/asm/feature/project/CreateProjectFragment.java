@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.snackbar.Snackbar;
 import dagger.hilt.android.AndroidEntryPoint;
+import java.util.List;
 import org.codirex.asm.domain.common.Validation;
 import org.codirex.asm.domain.project.PackageName;
 import org.codirex.asm.domain.project.ProjectException.Reason;
@@ -24,11 +25,13 @@ import org.codirex.asm.feature.project.databinding.FragmentCreateProjectBinding;
 public final class CreateProjectFragment extends Fragment {
 
   private static final String KEY_TYPE = "type";
+  private static final String KEY_TEMPLATE = "template";
 
   private CreateProjectViewModel viewModel;
   private FragmentCreateProjectBinding binding;
   private final ProjectType[] types = ProjectType.values();
   private int selectedType;
+  private int selectedTemplate;
 
   @Nullable
   @Override
@@ -45,6 +48,7 @@ public final class CreateProjectFragment extends Fragment {
     viewModel = new ViewModelProvider(this).get(CreateProjectViewModel.class);
     if (savedInstanceState != null) {
       selectedType = savedInstanceState.getInt(KEY_TYPE, 0);
+      selectedTemplate = savedInstanceState.getInt(KEY_TEMPLATE, 0);
     }
 
     String[] labels = new String[types.length];
@@ -54,7 +58,16 @@ public final class CreateProjectFragment extends Fragment {
     binding.typeInput.setAdapter(
         new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, labels));
     binding.typeInput.setText(labels[selectedType], false);
-    binding.typeInput.setOnItemClickListener((parent, v, position, id) -> selectedType = position);
+    binding.typeInput.setOnItemClickListener(
+        (parent, v, position, id) -> {
+          if (position != selectedType) {
+            selectedType = position;
+            selectedTemplate = 0;
+            viewModel.showTemplates(types[selectedType]);
+          }
+        });
+    binding.templateInput.setOnItemClickListener(
+        (parent, v, position, id) -> selectedTemplate = position);
 
     binding.nameInput.addTextChangedListener(
         new SimpleTextWatcher() {
@@ -77,10 +90,13 @@ public final class CreateProjectFragment extends Fragment {
             viewModel.create(
                 text(binding.nameInput.getText()),
                 text(binding.packageInput.getText()),
-                types[selectedType]));
+                types[selectedType],
+                chosenTemplateId()));
 
     updateButton();
+    viewModel.templates().observe(getViewLifecycleOwner(), this::renderTemplates);
     viewModel.state().observe(getViewLifecycleOwner(), this::render);
+    viewModel.showTemplates(types[selectedType]);
   }
 
   @Override
@@ -93,6 +109,7 @@ public final class CreateProjectFragment extends Fragment {
   public void onSaveInstanceState(@NonNull Bundle outState) {
     super.onSaveInstanceState(outState);
     outState.putInt(KEY_TYPE, selectedType);
+    outState.putInt(KEY_TEMPLATE, selectedTemplate);
   }
 
   @Override
@@ -101,12 +118,45 @@ public final class CreateProjectFragment extends Fragment {
     super.onDestroyView();
   }
 
+  /** The id of the template shown, or {@code null} when no choice is offered (default template). */
+  @Nullable
+  private String chosenTemplateId() {
+    TemplateChoices choices = viewModel.templates().getValue();
+    if (choices == null
+        || choices.type() != types[selectedType]
+        || choices.items().size() < 2
+        || selectedTemplate >= choices.items().size()) {
+      return null;
+    }
+    return choices.items().get(selectedTemplate).id();
+  }
+
+  /** The template choice is shown only when the type has more than one template. */
+  private void renderTemplates(TemplateChoices choices) {
+    List<TemplateChoices.Item> items = choices.items();
+    binding.templateLayout.setVisibility(items.size() > 1 ? View.VISIBLE : View.GONE);
+    if (items.size() < 2) {
+      return;
+    }
+    if (selectedTemplate >= items.size()) {
+      selectedTemplate = 0;
+    }
+    String[] names = new String[items.size()];
+    for (int i = 0; i < names.length; i++) {
+      names[i] = items.get(i).name();
+    }
+    binding.templateInput.setAdapter(
+        new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, names));
+    binding.templateInput.setText(names[selectedTemplate], false);
+  }
+
   private void render(CreateProjectState state) {
     boolean enabled = !state.busy();
     binding.progress.setVisibility(state.busy() ? View.VISIBLE : View.GONE);
     binding.nameLayout.setEnabled(enabled);
     binding.packageLayout.setEnabled(enabled);
     binding.typeLayout.setEnabled(enabled);
+    binding.templateLayout.setEnabled(enabled);
     updateButton();
 
     if (state.isCreated()) {

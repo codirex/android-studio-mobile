@@ -25,9 +25,15 @@ final class BuiltInTemplates implements TemplateCatalog {
 
   @Inject
   BuiltInTemplates() {
+    Template application = application();
     all =
         Collections.unmodifiableList(
-            Arrays.asList(application(), androidLibrary(), javaLibrary(), gradlePlugin()));
+            Arrays.asList(
+                application,
+                applicationWithoutActivity(application),
+                androidLibrary(),
+                javaLibrary(),
+                gradlePlugin()));
   }
 
   @Override
@@ -134,6 +140,11 @@ final class BuiltInTemplates implements TemplateCatalog {
 
   // --- Android application ---------------------------------------------------------------------
 
+  private static final String MAIN_ACTIVITY_PATH =
+      "app/src/main/java/${packagePath}/MainActivity.java";
+  private static final String MAIN_LAYOUT_PATH = "app/src/main/res/layout/activity_main.xml";
+  private static final String MANIFEST_PATH = "app/src/main/AndroidManifest.xml";
+
   private static Template application() {
     return new Template(
         "application-empty-activity",
@@ -174,7 +185,7 @@ final class BuiltInTemplates implements TemplateCatalog {
                 "    implementation(\"com.google.android.material:material:${materialVersion}\")",
                 "}"),
             file(
-                "app/src/main/AndroidManifest.xml",
+                MANIFEST_PATH,
                 "<?xml version=\"1.0\" encoding=\"utf-8\"?>",
                 "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\">",
                 "",
@@ -195,7 +206,7 @@ final class BuiltInTemplates implements TemplateCatalog {
                 "",
                 "</manifest>"),
             file(
-                "app/src/main/java/${packagePath}/MainActivity.java",
+                MAIN_ACTIVITY_PATH,
                 "package ${packageName};",
                 "",
                 "import android.os.Bundle;",
@@ -210,7 +221,7 @@ final class BuiltInTemplates implements TemplateCatalog {
                 "    }",
                 "}"),
             file(
-                "app/src/main/res/layout/activity_main.xml",
+                MAIN_LAYOUT_PATH,
                 "<?xml version=\"1.0\" encoding=\"utf-8\"?>",
                 "<FrameLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"",
                 "    android:layout_width=\"match_parent\"",
@@ -236,6 +247,42 @@ final class BuiltInTemplates implements TemplateCatalog {
                 "<resources>",
                 "    <style name=\"Theme.App\" parent=\"Theme.Material3.DayNight.NoActionBar\" />",
                 "</resources>")));
+  }
+
+  /**
+   * The same application without a screen: no activity, no layout, and a manifest that declares
+   * none. The user adds the first activity.
+   */
+  private static Template applicationWithoutActivity(Template full) {
+    List<TemplateFile> files = new ArrayList<>();
+    for (TemplateFile file : full.files()) {
+      if (file.path().equals(MAIN_ACTIVITY_PATH) || file.path().equals(MAIN_LAYOUT_PATH)) {
+        continue;
+      }
+      if (file.path().equals(MANIFEST_PATH)) {
+        files.add(
+            file(
+                MANIFEST_PATH,
+                "<?xml version=\"1.0\" encoding=\"utf-8\"?>",
+                "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\">",
+                "",
+                "    <application",
+                "        android:allowBackup=\"true\"",
+                "        android:label=\"@string/app_name\"",
+                "        android:supportsRtl=\"true\"",
+                "        android:theme=\"@style/Theme.App\" />",
+                "",
+                "</manifest>"));
+        continue;
+      }
+      files.add(file);
+    }
+    return new Template(
+        "application-no-activity",
+        "No Activity",
+        ProjectType.APPLICATION,
+        full.defaults(),
+        files);
   }
 
   // --- Android library -------------------------------------------------------------------------
