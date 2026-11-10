@@ -11,14 +11,15 @@ import org.codirex.asm.core.concurrency.RealmFactory;
 import org.codirex.asm.core.concurrency.RealmViewModel;
 import org.codirex.asm.core.concurrency.UiStateHolder;
 import org.codirex.asm.domain.filetree.FileTree;
+import org.codirex.asm.domain.filetree.MoveTargets;
 import org.codirex.asm.domain.filetree.ProjectFiles;
 import org.codirex.asm.domain.filetree.TreeNode;
 import org.codirex.asm.domain.project.ProjectName;
 
 /**
  * Loads the folders of one project off the main thread, keeps the {@link FileTree} and creates,
- * renames and deletes entries. All methods are called on the main thread. The project name comes
- * from the fragment arguments.
+ * renames, moves and deletes entries. All methods are called on the main thread. The project name
+ * comes from the fragment arguments.
  */
 @HiltViewModel
 final class FileTreeViewModel extends RealmViewModel {
@@ -30,6 +31,7 @@ final class FileTreeViewModel extends RealmViewModel {
   private final ProjectName project;
   private final UiStateHolder<FileTreeState> state =
       new UiStateHolder<>(FileTreeState.initial());
+  private final UiStateHolder<MoveOffer> offers = new UiStateHolder<>(MoveOffer.none());
 
   @Inject
   FileTreeViewModel(RealmFactory factory, ProjectFiles files, SavedStateHandle arguments) {
@@ -41,6 +43,11 @@ final class FileTreeViewModel extends RealmViewModel {
 
   LiveData<FileTreeState> state() {
     return state.observable();
+  }
+
+  /** The folders an entry can be moved to, after {@link #offerMove}; one-time, see offerHandled. */
+  LiveData<MoveOffer> moveOffers() {
+    return offers.observable();
   }
 
   /** Reloads the root and every folder that was loaded before, replacing what they held. */
@@ -115,6 +122,69 @@ final class FileTreeViewModel extends RealmViewModel {
             FileTree tree = current.tree().without(path);
             state.set(current.finished(tree).withEvent(TreeEvent.renamed(path, newPath)));
             load(parent);
+          } else if (outcome.isFailure()) {
+            state.set(current.failed(current.tree(), Failures.reasonOf(outcome.failureOrNull())));
+          } else {
+            state.set(current.finished(current.tree()));
+          }
+        });
+  }
+
+  /**
+   * Loads the folders the entry can be moved to and publishes them as a {@link MoveOffer}. A
+   * failure is shown as an error, like any other.
+   */
+  void offerMove(TreeNode node) {
+    state.set(state.get().started());
+    this.<List<String>>runAsync(
+        checkpoint -> files.folders(project),
+        outcome -> {
+          FileTreeState current = state.get();
+          if (outcome.isSuccess()) {
+            state.set(current.finished(current.tree()));
+            offers.set(
+                MoveOffer.of(
+                    node,
+                    MoveTargets.of(outcome.valueOrNull(), node.path(), node.isDirectory())));
+          } else if (outcome.isFailure()) {
+            state.set(current.failed(current.tree(), Failures.reasonOf(outcome.failureOrNull())));
+          } else {
+            state.set(current.finished(current.tree()));
+          }
+        });
+  }
+
+  /** The screen took the offer; do not offer it again. */
+  void offerHandled() {
+    offers.set(MoveOffer.none());
+  }
+
+  /**
+   * Moves an entry into {@code targetFolder} (the empty path is the root), then reloads the folder
+   * it left and the one it entered. The target folder opens so the entry is visible there.
+   */
+  void move(TreeNode node, String targetFolder) {
+    String path = node.path();
+    String parent = node.parentPath();
+    String newPath = targetFolder.isEmpty() ? node.name() : targetFolder + "/" + node.name();
+    state.set(state.get().started());
+    this.<Boolean>runAsync(
+        checkpoint -> {
+          files.move(project, path, targetFolder);
+          return Boolean.TRUE;
+        },
+        outcome -> {
+          FileTreeState current = state.get();
+          if (outcome.isSuccess()) {
+            FileTree tree = current.tree().without(path);
+            if (!targetFolder.isEmpty()) {
+              tree = tree.withExpanded(targetFolder);
+            }
+            state.set(current.finished(tree).withEvent(TreeEvent.renamed(path, newPath)));
+            load(parent);
+            if (!targetFolder.equals(parent)) {
+              load(targetFolder);
+            }
           } else if (outcome.isFailure()) {
             state.set(current.failed(current.tree(), Failures.reasonOf(outcome.failureOrNull())));
           } else {

@@ -27,8 +27,8 @@ import org.codirex.asm.feature.filetree.databinding.FragmentFileTreeBinding;
 
 /**
  * The files of one project as a tree. Folders open and close on tap; a tapped file is reported.
- * A long press offers new file, new folder, rename and delete; two buttons create at the project
- * root.
+ * A long press offers new file, new folder, rename, move and delete; two buttons create at the
+ * project root.
  */
 @AndroidEntryPoint
 public final class FileTreeFragment extends Fragment {
@@ -37,6 +37,7 @@ public final class FileTreeFragment extends Fragment {
   private static final int MENU_NEW_FOLDER = 2;
   private static final int MENU_RENAME = 3;
   private static final int MENU_DELETE = 4;
+  private static final int MENU_MOVE = 5;
 
   private FileTreeViewModel viewModel;
   private FragmentFileTreeBinding binding;
@@ -74,6 +75,7 @@ public final class FileTreeFragment extends Fragment {
     binding.newFolder.setOnClickListener(v -> showNewEntryDialog(FileTree.ROOT, true));
 
     viewModel.state().observe(getViewLifecycleOwner(), state -> render(adapter, state));
+    viewModel.moveOffers().observe(getViewLifecycleOwner(), this::showMoveOffer);
   }
 
   @Override
@@ -141,7 +143,8 @@ public final class FileTreeFragment extends Fragment {
       menu.getMenu().add(Menu.NONE, MENU_NEW_FOLDER, 1, R.string.tree_new_folder);
     }
     menu.getMenu().add(Menu.NONE, MENU_RENAME, 2, R.string.tree_rename);
-    menu.getMenu().add(Menu.NONE, MENU_DELETE, 3, R.string.tree_delete);
+    menu.getMenu().add(Menu.NONE, MENU_MOVE, 3, R.string.tree_move);
+    menu.getMenu().add(Menu.NONE, MENU_DELETE, 4, R.string.tree_delete);
     menu.setOnMenuItemClickListener(
         item -> {
           switch (item.getItemId()) {
@@ -154,6 +157,9 @@ public final class FileTreeFragment extends Fragment {
             case MENU_RENAME:
               showRenameDialog(node);
               return true;
+            case MENU_MOVE:
+              viewModel.offerMove(node);
+              return true;
             case MENU_DELETE:
               confirmDelete(node);
               return true;
@@ -162,6 +168,30 @@ public final class FileTreeFragment extends Fragment {
           }
         });
     menu.show();
+  }
+
+  /** Shows the folders an entry can be moved to; choosing one moves the entry there. */
+  private void showMoveOffer(MoveOffer offer) {
+    TreeNode node = offer.node();
+    if (node == null) {
+      return;
+    }
+    List<String> targets = offer.targets();
+    viewModel.offerHandled();
+    if (targets.isEmpty()) {
+      Snackbar.make(binding.getRoot(), R.string.tree_move_no_target, Snackbar.LENGTH_LONG).show();
+      return;
+    }
+    String[] labels = new String[targets.size()];
+    for (int i = 0; i < labels.length; i++) {
+      String target = targets.get(i);
+      labels[i] = (target.isEmpty() ? project.value() : target) + "/";
+    }
+    new MaterialAlertDialogBuilder(requireContext())
+        .setTitle(R.string.tree_move_title)
+        .setItems(labels, (dialog, which) -> viewModel.move(node, targets.get(which)))
+        .setNegativeButton(android.R.string.cancel, null)
+        .show();
   }
 
   private void showNewEntryDialog(String parentPath, boolean directory) {

@@ -5,7 +5,7 @@ import org.codirex.asm.domain.project.ProjectException;
 import org.codirex.asm.domain.project.ProjectName;
 
 /**
- * Lists, creates, renames and deletes the files of a project. The domain defines it; {@code
+ * Lists, creates, renames, moves and deletes the files of a project. The domain defines it; {@code
  * data:project} implements it.
  *
  * <p><b>Every method blocks.</b> Callers run them in a background job, never on the main thread.
@@ -24,6 +24,15 @@ public interface ProjectFiles {
    *     STORAGE} if the folder cannot be read or the path leaves the project
    */
   List<TreeNode> list(ProjectName project, String relativePath) throws ProjectException;
+
+  /**
+   * The paths of all folders of the project, at any depth, without the root and without the
+   * internal folder. The order is not specified. A very deep or very large tree is cut off.
+   *
+   * @throws ProjectException with reason {@code NOT_FOUND} if there is no such project, or {@code
+   *     STORAGE} if a folder cannot be read
+   */
+  List<String> folders(ProjectName project) throws ProjectException;
 
   /**
    * Creates an empty file or a folder named {@code name} inside the folder {@code parentPath}.
@@ -45,6 +54,18 @@ public interface ProjectFiles {
    *     project
    */
   void rename(ProjectName project, String relativePath, String newName) throws ProjectException;
+
+  /**
+   * Moves a file or folder, with everything inside it, into the folder {@code targetFolderPath}
+   * (the empty path is the root). It keeps its name.
+   *
+   * @throws ProjectException with reason {@code ALREADY_EXISTS} if the target folder already has an
+   *     entry with that name, {@code NOT_FOUND} if there is no such project, or {@code STORAGE} if
+   *     the entry does not exist, it is the project root or the internal folder, the target is not
+   *     a folder, is the internal folder or lies inside the entry, or a path leaves the project
+   */
+  void move(ProjectName project, String relativePath, String targetFolderPath)
+      throws ProjectException;
 
   /**
    * Deletes a file, or a folder with everything inside it. The project root and the internal folder

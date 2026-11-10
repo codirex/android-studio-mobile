@@ -16,11 +16,17 @@ import org.codirex.asm.domain.project.ProjectException.Reason;
 import org.codirex.asm.domain.project.ProjectName;
 
 /**
- * Lists, creates, renames and deletes project files. Paths are resolved by {@link ProjectLocator},
- * so they stay inside the project.
+ * Lists, creates, renames, moves and deletes project files. Paths are resolved by {@link
+ * ProjectLocator}, so they stay inside the project.
  */
 @Singleton
 final class FileProjectFiles implements ProjectFiles {
+
+  /** {@link #folders} goes no deeper than this. */
+  private static final int MAX_DEPTH = 32;
+
+  /** {@link #folders} returns no more than this many folders. */
+  private static final int MAX_FOLDERS = 5000;
 
   private final FileOperations files;
   private final ProjectLocator locator;
@@ -51,6 +57,41 @@ final class FileProjectFiles implements ProjectFiles {
       nodes.add(new TreeNode(path, entry.isDirectory()));
     }
     return nodes;
+  }
+
+  @Override
+  public List<String> folders(ProjectName project) throws ProjectException {
+    File directory = locator.projectDirectory(project);
+    List<String> result = new ArrayList<>();
+    collectFolders(directory, "", 0, result);
+    return result;
+  }
+
+  private void collectFolders(File directory, String prefix, int depth, List<String> out)
+      throws ProjectException {
+    if (depth >= MAX_DEPTH || out.size() >= MAX_FOLDERS) {
+      return;
+    }
+    List<FileEntry> entries;
+    try {
+      entries = files.list(directory);
+    } catch (IOException e) {
+      throw new ProjectException(Reason.STORAGE, "cannot list " + directory.getName(), e);
+    }
+    for (FileEntry entry : entries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+      if (prefix.isEmpty() && entry.name().equals(ProjectFiles.INTERNAL_DIRECTORY)) {
+        continue;
+      }
+      if (out.size() >= MAX_FOLDERS) {
+        return;
+      }
+      String path = prefix.isEmpty() ? entry.name() : prefix + "/" + entry.name();
+      out.add(path);
+      collectFolders(new File(directory, entry.name()), path, depth + 1, out);
+    }
   }
 
   @Override
@@ -104,6 +145,39 @@ final class FileProjectFiles implements ProjectFiles {
       files.move(source, target);
     } catch (IOException e) {
       throw new ProjectException(Reason.STORAGE, "cannot rename " + relativePath, e);
+    }
+  }
+
+  @Override
+  public void move(ProjectName project, String relativePath, String targetFolderPath)
+      throws ProjectException {
+    if (relativePath.isEmpty()) {
+      throw new ProjectException(Reason.STORAGE, "the project root cannot be moved");
+    }
+    File source = locator.resolve(project, relativePath);
+    rejectInternal(project, source);
+    if (!source.exists()) {
+      throw new ProjectException(Reason.STORAGE, "no such file: " + relativePath);
+    }
+    File targetFolder = locator.resolve(project, targetFolderPath);
+    rejectInternal(project, targetFolder);
+    if (!targetFolder.isDirectory()) {
+      throw new ProjectException(Reason.STORAGE, "not a folder: " + targetFolderPath);
+    }
+    if (targetFolderPath.equals(relativePath) || targetFolderPath.startsWith(relativePath + "/")) {
+      throw new ProjectException(Reason.STORAGE, "cannot move " + relativePath + " into itself");
+    }
+    String name = relativePath.substring(relativePath.lastIndexOf('/') + 1);
+    File target =
+        locator.resolve(project, targetFolderPath.isEmpty() ? name : targetFolderPath + "/" + name);
+    rejectInternal(project, target);
+    if (target.exists()) {
+      throw new ProjectException(Reason.ALREADY_EXISTS, "already exists: " + name);
+    }
+    try {
+      files.move(source, target);
+    } catch (IOException e) {
+      throw new ProjectException(Reason.STORAGE, "cannot move " + relativePath, e);
     }
   }
 

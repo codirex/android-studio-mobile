@@ -11,6 +11,9 @@
     <string name="tree_name_hint">Name</string>
     <string name="tree_create">Create</string>
     <string name="tree_rename">Rename</string>
+    <string name="tree_move">Move to…</string>
+    <string name="tree_move_title">Move to</string>
+    <string name="tree_move_no_target">There is no other folder to move it to.</string>
     <string name="tree_delete">Delete</string>
     <string name="tree_delete_file_message">Delete the file %1$s? This cannot be undone.</string>
     <string name="tree_delete_folder_message">Delete the folder %1$s and everything inside it? This cannot be undone.</string>

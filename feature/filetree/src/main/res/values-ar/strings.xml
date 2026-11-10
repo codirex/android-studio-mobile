@@ -11,6 +11,9 @@
     <string name="tree_name_hint">الاسم</string>
     <string name="tree_create">إنشاء</string>
     <string name="tree_rename">إعادة تسمية</string>
+    <string name="tree_move">نقل إلى…</string>
+    <string name="tree_move_title">نقل إلى</string>
+    <string name="tree_move_no_target">لا يوجد مجلد آخر للنقل إليه.</string>
     <string name="tree_delete">حذف</string>
     <string name="tree_delete_file_message">حذف الملف %1$s؟ لا يمكن التراجع عن هذا.</string>
     <string name="tree_delete_folder_message">حذف المجلد %1$s وكل ما بداخله؟ لا يمكن التراجع عن هذا.</string>
