@@ -25,6 +25,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0017](0017-project-templates.md) | Project templates | Proposed |
 | [0018](0018-restore-open-tabs.md) | Restoring the open tabs | Proposed |
 | [0019](0019-move-entries.md) | Moving files and folders | Proposed |
+| [0020](0020-terminal-emulator.md) | Our own terminal emulator | Proposed |
 
 ## Template
 
