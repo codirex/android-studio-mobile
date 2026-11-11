@@ -44,7 +44,7 @@ public final class BootstrapInstaller {
 
   /** Files under these paths get the executable bit; a zip archive does not carry it. */
   private static final String[] EXECUTABLE_PREFIXES = {
-    "bin/", "libexec", "lib/apt/apt-helper", "lib/apt/methods", "etc/termux/bootstrap/"
+    "bin/", "libexec", "lib/apt/apt-helper", "lib/apt/methods", "etc/termux/termux-bootstrap/"
   };
 
   /** Receives the progress of an installation. */
