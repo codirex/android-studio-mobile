@@ -14,7 +14,9 @@ public final class TemplateException extends Exception {
     /** A rendered path is absolute, leaves the project or points into the internal folder. */
     UNSAFE_PATH,
     /** The storage failed while writing the files. */
-    STORAGE
+    STORAGE,
+    /** A template does not meet the rules for saving it (id, name, variables, files, size). */
+    INVALID
   }
 
   private static final long serialVersionUID = 1L;
