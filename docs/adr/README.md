@@ -27,6 +27,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0019](0019-move-entries.md) | Moving files and folders | Proposed |
 | [0020](0020-terminal-emulator.md) | Our own terminal emulator | Proposed |
 | [0021](0021-custom-templates.md) | Custom templates | Proposed |
+| [0022](0022-bootstrap-installer.md) | Installing the userland from a bootstrap archive | Proposed |
 
 ## Template
 
