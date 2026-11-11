@@ -9,6 +9,7 @@ android {
 dependencies {
     implementation(project(":domain:project"))
     implementation(project(":domain:template"))
+    implementation(project(":core:fs"))
 
     implementation(libs.hilt.android)
     annotationProcessor(libs.hilt.compiler)
