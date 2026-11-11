@@ -25,6 +25,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Native terminal tests (pty_core)
+        run: |
+          gcc -Wall -Wextra -Werror -std=c99 -o pty_core_test \
+            terminal/pty/src/main/cpp/pty_core.c terminal/pty/src/test/cpp/pty_core_test.c \
+            -Iterminal/pty/src/main/cpp
+          ./pty_core_test
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

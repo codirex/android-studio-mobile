@@ -28,6 +28,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0020](0020-terminal-emulator.md) | Our own terminal emulator | Proposed |
 | [0021](0021-custom-templates.md) | Custom templates | Proposed |
 | [0022](0022-bootstrap-installer.md) | Installing the userland from a bootstrap archive | Proposed |
+| [0023](0023-pty-native.md) | Pseudo-terminals in native code | Proposed |
 
 ## Template
 
