@@ -21,4 +21,6 @@
     <string name="terminal_key_tab">Tab</string>
     <string name="terminal_key_ctrl">Ctrl</string>
     <string name="terminal_key_alt">Alt</string>
+    <string name="terminal_key_paste">لصق</string>
+    <string name="terminal_copied">تم النسخ</string>
 </resources>
