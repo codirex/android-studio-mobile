@@ -8,7 +8,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 |---|---|---|
 | [0001](0001-record-architecture-decisions.md) | Record architecture decisions | Accepted |
 | [0002](0002-toolchain-and-platform.md) | Toolchain and platform | Accepted |
-| [0003](0003-module-layering.md) | Module layering | Accepted |
+| [0003](0003-module-layering.md) | Module layering | Accepted, feature rule widened by ADR-0025 |
 | [0004](0004-concurrency-clotho.md) | Concurrency with Clotho | Accepted, scoping details proposed |
 | [0005](0005-ui-views-and-editor.md) | UI toolkit and editor | Accepted |
 | [0006](0006-terminal-separate-process.md) | The terminal runs in a separate process | Accepted |
@@ -30,6 +30,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0022](0022-bootstrap-installer.md) | Installing the userland from a bootstrap archive | Proposed |
 | [0023](0023-pty-native.md) | Pseudo-terminals in native code | Proposed |
 | [0024](0024-terminal-service.md) | The terminal service and its protocol | Proposed |
+| [0025](0025-terminal-view.md) | The terminal view | Proposed |
 
 ## Template
 

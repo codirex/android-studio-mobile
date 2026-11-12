@@ -11,6 +11,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SKIPPED_DIRS = {"build-logic", "build", ".git", ".gradle", "tools", "docs"}
 LAYERS = {"app", "feature", "domain", "data", "core", "terminal"}
+# The only terminal modules a feature may use (ADR-0003 rule table, widened by ADR-0025).
+FEATURE_TERMINAL_MODULES = {":terminal:protocol", ":terminal:view"}
 PROJECT_DEP = re.compile(r'project\(\s*"(:[^"]+)"\s*\)')
 ANDROID_IMPORT = re.compile(r"^\s*import\s+(static\s+)?(android|androidx)\.", re.M)
 DOMAIN_FORBIDDEN_IN_BUILD = re.compile(r"libs\.(androidx|hilt|clotho)|com\.android\.|asm\.android\.")
@@ -35,7 +37,7 @@ def allowed(src, dst):
     if s == "app":
         return True
     if s == "feature":
-        return d in ("domain", "core") or dst == ":terminal:protocol"
+        return d in ("domain", "core") or dst in FEATURE_TERMINAL_MODULES
     if s == "domain":
         return d == "domain"
     if s in ("data", "core"):
