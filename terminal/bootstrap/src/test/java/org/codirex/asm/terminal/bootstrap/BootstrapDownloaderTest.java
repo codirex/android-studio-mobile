@@ -5,12 +5,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.sun.net.httpserver.HttpServer;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -30,7 +33,7 @@ public final class BootstrapDownloaderTest {
 
   @Rule public final TemporaryFolder tmp = new TemporaryFolder();
 
-  private HttpServer server;
+  private TestServer server;
   private String base;
   private byte[] archive;
   private File directory;
@@ -42,40 +45,87 @@ public final class BootstrapDownloaderTest {
       archive[i] = (byte) (i * 31 + 7);
     }
     directory = new File(tmp.getRoot(), "downloads");
-    server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
-    server.createContext(
-        "/rel/bootstrap-aarch64.zip",
-        exchange -> {
-          exchange.sendResponseHeaders(200, archive.length);
-          try (OutputStream out = exchange.getResponseBody()) {
-            out.write(archive);
-          }
-        });
-    server.createContext(
-        "/moved/bootstrap-aarch64.zip",
-        exchange -> {
-          exchange.getResponseHeaders().add("Location", "/rel/bootstrap-aarch64.zip");
-          exchange.sendResponseHeaders(302, -1);
-          exchange.close();
-        });
-    server.createContext(
-        "/short/bootstrap-aarch64.zip",
-        exchange -> {
+    server = new TestServer();
+    base = "http://127.0.0.1:" + server.port();
+  }
+
+  /**
+   * A small HTTP server on plain sockets: the unit tests of an Android library compile against
+   * android.jar, which has no com.sun.net.httpserver.
+   */
+  private final class TestServer {
+    private final ServerSocket socket =
+        new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
+
+    TestServer() throws IOException {
+      Thread acceptor =
+          new Thread(
+              () -> {
+                while (!socket.isClosed()) {
+                  try {
+                    final Socket client = socket.accept();
+                    Thread handler = new Thread(() -> serve(client));
+                    handler.setDaemon(true);
+                    handler.start();
+                  } catch (IOException e) {
+                    return;
+                  }
+                }
+              });
+      acceptor.setDaemon(true);
+      acceptor.start();
+    }
+
+    int port() {
+      return socket.getLocalPort();
+    }
+
+    void stop() {
+      try {
+        socket.close();
+      } catch (IOException ignored) {
+        // Already closed.
+      }
+    }
+
+    private void serve(Socket client) {
+      try (Socket c = client) {
+        BufferedReader in =
+            new BufferedReader(new InputStreamReader(c.getInputStream(), StandardCharsets.US_ASCII));
+        String request = in.readLine();
+        String line;
+        while ((line = in.readLine()) != null && !line.isEmpty()) {
+          // Skip the headers.
+        }
+        String path = request == null ? "" : request.split(" ")[1];
+        OutputStream out = c.getOutputStream();
+        if (path.equals("/rel/bootstrap-aarch64.zip")) {
+          head(out, "200 OK", "Content-Length: " + archive.length);
+          out.write(archive);
+        } else if (path.equals("/moved/bootstrap-aarch64.zip")) {
+          head(out, "302 Found", "Location: /rel/bootstrap-aarch64.zip\r\nContent-Length: 0");
+        } else if (path.equals("/short/bootstrap-aarch64.zip")) {
           // Promises more bytes than it sends, then closes the connection.
-          exchange.sendResponseHeaders(200, archive.length);
-          try (OutputStream out = exchange.getResponseBody()) {
-            out.write(archive, 0, 1000);
-          } catch (IOException expected) {
-            // The server library refuses to end a response that is too short.
-          }
-        });
-    server.start();
-    base = "http://127.0.0.1:" + server.getAddress().getPort();
+          head(out, "200 OK", "Content-Length: " + archive.length);
+          out.write(archive, 0, 1000);
+        } else {
+          head(out, "404 Not Found", "Content-Length: 0");
+        }
+        out.flush();
+      } catch (IOException ignored) {
+        // The client went away.
+      }
+    }
+
+    private void head(OutputStream out, String status, String headers) throws IOException {
+      String text = "HTTP/1.1 " + status + "\r\n" + headers + "\r\nConnection: close\r\n\r\n";
+      out.write(text.getBytes(StandardCharsets.US_ASCII));
+    }
   }
 
   @After
   public void tearDown() {
-    server.stop(0);
+    server.stop();
   }
 
   private String sha256(byte[] bytes) throws Exception {
@@ -176,7 +226,7 @@ public final class BootstrapDownloaderTest {
   @Test
   public void aServerThatIsNotThereIsANetworkError() throws Exception {
     BootstrapDownloader gone = downloader("/rel", sha256(archive));
-    server.stop(0);
+    server.stop();
     assertFails(Reason.NETWORK, gone, BootstrapArch.AARCH64, null);
     assertNoFilesLeft();
   }
