@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="terminal_preparing">Preparing the terminal…</string>
+    <string name="terminal_downloading_percent">Downloading the terminal tools… %1$d%% (%2$s MB)</string>
+    <string name="terminal_downloading_size">Downloading the terminal tools… %1$s MB</string>
+    <string name="terminal_extracting">Installing the terminal tools…</string>
+    <string name="terminal_cancel">Cancel</string>
+    <string name="terminal_retry">Try again</string>
+    <string name="terminal_error_network">The download failed. Check your connection and try again.</string>
+    <string name="terminal_error_checksum">The downloaded file is not the expected one.</string>
+    <string name="terminal_error_unavailable">The terminal tools are not available for this device yet.</string>
+    <string name="terminal_error_invalid_archive">The downloaded file is damaged.</string>
+    <string name="terminal_error_storage">Not enough storage space to install the terminal tools.</string>
+    <string name="terminal_error_cancelled">The installation was cancelled.</string>
+    <string name="terminal_error_unknown">The installation failed: %1$s</string>
+    <string name="terminal_start_failed">The terminal could not be started.</string>
+    <string name="terminal_service_lost">The terminal service stopped. Sessions were lost.</string>
+    <string name="terminal_session_ended">The session ended (code %1$d).</string>
+    <string name="terminal_new_session">New session</string>
+    <string name="terminal_key_esc">Esc</string>
+    <string name="terminal_key_tab">Tab</string>
+    <string name="terminal_key_ctrl">Ctrl</string>
+    <string name="terminal_key_alt">Alt</string>
+</resources>

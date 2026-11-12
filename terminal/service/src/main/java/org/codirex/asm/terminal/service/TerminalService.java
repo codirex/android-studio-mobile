@@ -21,13 +21,14 @@ public final class TerminalService extends Service {
 
   private SessionManager sessions;
   private TerminalBinder binder;
+  private volatile boolean bound;
 
   /** The intent that binds to the service. */
   public static Intent intent(Context context) {
     return new Intent(context, TerminalService.class);
   }
 
-  /** Starts the service in the foreground; it keeps running until its last session is closed. */
+  /** Starts the service in the foreground; it keeps running while it has sessions or the UI is bound. */
   public static void start(Context context) {
     Intent intent = intent(context);
     if (Build.VERSION.SDK_INT >= 26) {
@@ -42,7 +43,8 @@ public final class TerminalService extends Service {
     super.onCreate();
     sessions = new SessionManager(new PtyLauncher(getFilesDir()), SessionManager.DEFAULT_BUFFER);
     UserlandSetup setup = UserlandSetup.create(getFilesDir(), getCacheDir(), Build.SUPPORTED_ABIS);
-    binder = new TerminalBinder(sessions, setup, this::stopSelf);
+    // With no sessions left the service stops, unless the UI is bound and may open a new one.
+    binder = new TerminalBinder(sessions, setup, this::stopWhenUnused);
   }
 
   @Override
@@ -54,7 +56,21 @@ public final class TerminalService extends Service {
 
   @Override
   public IBinder onBind(Intent intent) {
+    bound = true;
     return binder;
+  }
+
+  @Override
+  public boolean onUnbind(Intent intent) {
+    bound = false;
+    stopWhenUnused();
+    return false;
+  }
+
+  private void stopWhenUnused() {
+    if (!bound && sessions.ids().length == 0) {
+      stopSelf();
+    }
   }
 
   @Override

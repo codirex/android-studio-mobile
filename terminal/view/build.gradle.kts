@@ -8,7 +8,8 @@ android {
 
 dependencies {
     implementation(project(":terminal:emulator"))
-    implementation(project(":terminal:protocol"))
+    // Its types (ITerminalService) are in the signatures of TerminalView and TerminalConnection.
+    api(project(":terminal:protocol"))
     implementation(project(":terminal:service"))
 
     testImplementation(libs.junit4)

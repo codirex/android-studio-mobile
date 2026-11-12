@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="terminal_preparing">جارٍ تجهيز الطرفية…</string>
+    <string name="terminal_downloading_percent">جارٍ تنزيل أدوات الطرفية… %1$d%% (%2$s م.ب)</string>
+    <string name="terminal_downloading_size">جارٍ تنزيل أدوات الطرفية… %1$s م.ب</string>
+    <string name="terminal_extracting">جارٍ تثبيت أدوات الطرفية…</string>
+    <string name="terminal_cancel">إلغاء</string>
+    <string name="terminal_retry">إعادة المحاولة</string>
+    <string name="terminal_error_network">فشل التنزيل. تحقق من الاتصال وأعد المحاولة.</string>
+    <string name="terminal_error_checksum">الملف الذي تم تنزيله ليس الملف المتوقع.</string>
+    <string name="terminal_error_unavailable">أدوات الطرفية غير متاحة لهذا الجهاز بعد.</string>
+    <string name="terminal_error_invalid_archive">الملف الذي تم تنزيله تالف.</string>
+    <string name="terminal_error_storage">لا توجد مساحة تخزين كافية لتثبيت أدوات الطرفية.</string>
+    <string name="terminal_error_cancelled">تم إلغاء التثبيت.</string>
+    <string name="terminal_error_unknown">فشل التثبيت: %1$s</string>
+    <string name="terminal_start_failed">تعذر تشغيل الطرفية.</string>
+    <string name="terminal_service_lost">توقفت خدمة الطرفية وفُقدت الجلسات.</string>
+    <string name="terminal_session_ended">انتهت الجلسة (الرمز %1$d).</string>
+    <string name="terminal_new_session">جلسة جديدة</string>
+    <string name="terminal_key_esc">Esc</string>
+    <string name="terminal_key_tab">Tab</string>
+    <string name="terminal_key_ctrl">Ctrl</string>
+    <string name="terminal_key_alt">Alt</string>
+</resources>
