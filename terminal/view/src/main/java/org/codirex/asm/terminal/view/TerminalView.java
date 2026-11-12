@@ -41,6 +41,9 @@ public final class TerminalView extends View {
 
     /** The session ended; {@code exitCode} is negative for a signal. */
     void onSessionExited(int exitCode);
+
+    /** Ctrl or Alt was used up by a key (they stay on for one key only). */
+    void onModifiersChanged(boolean ctrlLatched, boolean altLatched);
   }
 
   private static final int SCROLLBACK_LINES = 2000;
@@ -262,8 +265,7 @@ public final class TerminalView extends View {
       applicationCursor = screen.emulator().isApplicationCursorKeys();
     }
     send(KeyEncoder.key(key, ctrlLatched, altLatched, false, applicationCursor));
-    ctrlLatched = false;
-    altLatched = false;
+    clearLatches();
   }
 
   /** Makes the next typed character a control character (the Ctrl button of an extra keys row). */
@@ -283,11 +285,24 @@ public final class TerminalView extends View {
     return altLatched;
   }
 
+  private void clearLatches() {
+    if (!ctrlLatched && !altLatched) {
+      return;
+    }
+    ctrlLatched = false;
+    altLatched = false;
+    post(
+        () -> {
+          if (callbacks != null) {
+            callbacks.onModifiersChanged(false, false);
+          }
+        });
+  }
+
   /** Types text, as the soft keyboard or a paste does. */
   public void typeText(String text) {
     send(KeyEncoder.text(text, ctrlLatched, altLatched));
-    ctrlLatched = false;
-    altLatched = false;
+    clearLatches();
   }
 
   /** Pastes text, wrapped for programs that asked for it. */
@@ -395,8 +410,7 @@ public final class TerminalView extends View {
         applicationCursor = screen.emulator().isApplicationCursorKeys();
       }
       send(KeyEncoder.key(key, ctrl, alt, event.isShiftPressed(), applicationCursor));
-      ctrlLatched = false;
-      altLatched = false;
+      clearLatches();
       return true;
     }
     if (keyCode == KeyEvent.KEYCODE_BACK
@@ -411,8 +425,7 @@ public final class TerminalView extends View {
       return false;
     }
     send(KeyEncoder.text(new String(Character.toChars(unicode)), ctrl, alt));
-    ctrlLatched = false;
-    altLatched = false;
+    clearLatches();
     return true;
   }
 
