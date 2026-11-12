@@ -35,6 +35,11 @@ public final class WorkspaceFragment extends Fragment {
     return fragment;
   }
 
+  /** The project this workspace shows. */
+  ProjectName project() {
+    return ProjectName.of(requireArguments().getString(ARG_PROJECT));
+  }
+
   @Nullable
   @Override
   public View onCreateView(
@@ -48,7 +53,7 @@ public final class WorkspaceFragment extends Fragment {
   @Override
   public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
     if (savedInstanceState == null) {
-      ProjectName project = ProjectName.of(requireArguments().getString(ARG_PROJECT));
+      ProjectName project = project();
       getChildFragmentManager()
           .beginTransaction()
           .replace(R.id.tree_container, FileTreeFragment.newInstance(project))

@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":feature:editor"))
     implementation(project(":feature:filetree"))
     implementation(project(":feature:project"))
+    implementation(project(":feature:terminal"))
 
     implementation(libs.hilt.android)
     annotationProcessor(libs.hilt.compiler)
