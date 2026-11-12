@@ -7,6 +7,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:fs"))
     implementation(project(":terminal:protocol"))
     implementation(project(":terminal:pty"))
     implementation(project(":terminal:bootstrap"))
