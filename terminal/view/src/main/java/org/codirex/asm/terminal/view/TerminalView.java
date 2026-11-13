@@ -13,6 +13,7 @@ import android.view.GestureDetector;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
@@ -60,6 +61,9 @@ public final class TerminalView extends View {
   private final Paint fillPaint = new Paint();
   private final char[] glyph = new char[2];
   private final GestureDetector gestures;
+  private final ScaleGestureDetector scaling;
+  private float textSizeSp = DEFAULT_TEXT_SP;
+  private float pinchSizeSp = DEFAULT_TEXT_SP;
 
   private TerminalScreen screen;
   private Callbacks callbacks;
@@ -96,6 +100,26 @@ public final class TerminalView extends View {
     textPaint.setTypeface(Typeface.MONOSPACE);
     setTextSizeSp(DEFAULT_TEXT_SP);
     screen = newScreen();
+    scaling =
+        new ScaleGestureDetector(
+            context,
+            new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+              @Override
+              public boolean onScaleBegin(ScaleGestureDetector detector) {
+                pinchSizeSp = textSizeSp;
+                return true;
+              }
+
+              @Override
+              public boolean onScale(ScaleGestureDetector detector) {
+                pinchSizeSp = TextScale.scaled(pinchSizeSp, detector.getScaleFactor());
+                float applied = TextScale.step(pinchSizeSp);
+                if (applied != textSizeSp) {
+                  setTextSizeSp(applied);
+                }
+                return true;
+              }
+            });
     gestures =
         new GestureDetector(
             context,
@@ -193,6 +217,7 @@ public final class TerminalView extends View {
 
   /** The text size in scaled pixels; the number of rows and columns follows. */
   public void setTextSizeSp(float sp) {
+    textSizeSp = sp;
     float pixels = sp * getResources().getDisplayMetrics().scaledDensity;
     textPaint.setTextSize(pixels);
     cellWidth = textPaint.measureText("M");
@@ -553,6 +578,10 @@ public final class TerminalView extends View {
         copySelection();
         return true;
       }
+    }
+    scaling.onTouchEvent(event);
+    if (scaling.isInProgress()) {
+      return true;
     }
     return gestures.onTouchEvent(event) || super.onTouchEvent(event);
   }
