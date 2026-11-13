@@ -10,6 +10,9 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import com.google.android.material.tabs.TabLayout;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.codirex.asm.feature.terminal.databinding.FragmentTerminalBinding;
@@ -19,9 +22,9 @@ import org.codirex.asm.terminal.view.TerminalConnection;
 import org.codirex.asm.terminal.view.TerminalView;
 
 /**
- * A terminal screen: installs the userland on first use, then shows a shell session in the given
- * directory. The session lives in the terminal service, so leaving the screen does not end it; the
- * next visit picks the last session up again.
+ * A terminal screen: installs the userland on first use, then shows shell sessions in the given
+ * directory, one per tab. The sessions live in the terminal service, so leaving the screen does not
+ * end them; the next visit shows them again.
  */
 public final class TerminalFragment extends Fragment {
 
@@ -45,6 +48,8 @@ public final class TerminalFragment extends Fragment {
   private int lastRows = 24;
   private int lastColumns = 80;
   private int currentSession = -1;
+  private final List<Integer> sessionIds = new ArrayList<>();
+  private boolean updatingTabs;
 
   @Nullable
   @Override
@@ -90,7 +95,25 @@ public final class TerminalFragment extends Fragment {
             }
           }
         });
-    binding.newSession.setOnClickListener(v -> startSession());
+    binding.newSession.setOnClickListener(v -> loadSessions(currentSession, true));
+    binding.addSession.setOnClickListener(v -> loadSessions(-1, true));
+    binding.closeSession.setOnClickListener(v -> loadSessions(currentSession, false));
+    binding.sessionTabs.addOnTabSelectedListener(
+        new TabLayout.OnTabSelectedListener() {
+          @Override
+          public void onTabSelected(TabLayout.Tab tab) {
+            int position = tab.getPosition();
+            if (!updatingTabs && position >= 0 && position < sessionIds.size()) {
+              showSession(sessionIds.get(position));
+            }
+          }
+
+          @Override
+          public void onTabUnselected(TabLayout.Tab tab) {}
+
+          @Override
+          public void onTabReselected(TabLayout.Tab tab) {}
+        });
     connection =
         new TerminalConnection(
             requireContext(),
@@ -253,15 +276,21 @@ public final class TerminalFragment extends Fragment {
     binding.installAction.setVisibility(View.VISIBLE);
   }
 
-  /** Reuses the last session of the service, or opens a new one. */
+  /** Shows the sessions of the service, opening one if there is none. */
   private void startSession() {
+    loadSessions(-1, false);
+  }
+
+  /**
+   * Refreshes the tabs from the service. {@code closeId} (if not negative) is closed first;
+   * {@code forceNew} opens a new session; a new session is also opened when none is left.
+   */
+  private void loadSessions(final int closeId, final boolean forceNew) {
     final ITerminalService target = service;
     if (target == null || binding == null) {
       return;
     }
     final String directory = requireArguments().getString(ARG_DIRECTORY, "");
-    final boolean fresh = binding.endedBanner.getVisibility() == View.VISIBLE;
-    binding.endedBanner.setVisibility(View.GONE);
     showTerminal();
     binding.terminal.post(
         () -> {
@@ -275,20 +304,59 @@ public final class TerminalFragment extends Fragment {
           calls.execute(
               () -> {
                 try {
-                  if (fresh && currentSession >= 0) {
-                    target.closeSession(currentSession);
+                  if (closeId >= 0) {
+                    target.closeSession(closeId);
                   }
                   int[] ids = target.sessionIds();
-                  final int id =
-                      !fresh && ids.length > 0
-                          ? ids[ids.length - 1]
-                          : target.openSession(directory, rows, columns);
-                  ui(() -> attach(target, id));
+                  int select = -1;
+                  if (forceNew || ids.length == 0) {
+                    select = target.openSession(directory, rows, columns);
+                    ids = target.sessionIds();
+                  } else {
+                    for (int id : ids) {
+                      if (id == currentSession) {
+                        select = id;
+                      }
+                    }
+                    if (select < 0) {
+                      select = ids[ids.length - 1];
+                    }
+                  }
+                  final int[] shown = ids;
+                  final int chosen = select;
+                  ui(() -> showSessions(target, shown, chosen));
                 } catch (RemoteException | RuntimeException e) {
                   ui(() -> fail(getString(R.string.terminal_start_failed)));
                 }
               });
         });
+  }
+
+  /** Rebuilds the tabs and shows the chosen session. */
+  private void showSessions(ITerminalService target, int[] ids, int selected) {
+    if (binding == null || service != target) {
+      return;
+    }
+    updatingTabs = true;
+    sessionIds.clear();
+    binding.sessionTabs.removeAllTabs();
+    for (int i = 0; i < ids.length; i++) {
+      sessionIds.add(ids[i]);
+      TabLayout.Tab tab = binding.sessionTabs.newTab();
+      tab.setText(getString(R.string.terminal_tab_title, i + 1));
+      binding.sessionTabs.addTab(tab, ids[i] == selected);
+    }
+    updatingTabs = false;
+    showSession(selected);
+  }
+
+  /** Attaches the view to a session of the service. */
+  private void showSession(int id) {
+    if (binding == null || service == null) {
+      return;
+    }
+    binding.endedBanner.setVisibility(View.GONE);
+    attach(service, id);
   }
 
   private void attach(ITerminalService target, int id) {
@@ -324,12 +392,14 @@ public final class TerminalFragment extends Fragment {
 
   private void showPanel() {
     binding.installPanel.setVisibility(View.VISIBLE);
+    binding.tabsBar.setVisibility(View.GONE);
     binding.terminal.setVisibility(View.GONE);
     binding.extraKeysScroll.setVisibility(View.GONE);
   }
 
   private void showTerminal() {
     binding.installPanel.setVisibility(View.GONE);
+    binding.tabsBar.setVisibility(View.VISIBLE);
     binding.terminal.setVisibility(View.VISIBLE);
     binding.extraKeysScroll.setVisibility(View.VISIBLE);
   }

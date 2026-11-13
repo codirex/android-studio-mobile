@@ -23,4 +23,7 @@
     <string name="terminal_key_alt">Alt</string>
     <string name="terminal_key_paste">لصق</string>
     <string name="terminal_copied">تم النسخ</string>
+    <string name="terminal_new_tab">طرفية جديدة</string>
+    <string name="terminal_close_tab">إغلاق الطرفية</string>
+    <string name="terminal_tab_title">طرفية %1$d</string>
 </resources>
