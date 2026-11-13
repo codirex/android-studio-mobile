@@ -1,5 +1,7 @@
 package org.codirex.asm.terminal.view;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -44,6 +46,9 @@ public final class TerminalView extends View {
 
     /** Ctrl or Alt was used up by a key (they stay on for one key only). */
     void onModifiersChanged(boolean ctrlLatched, boolean altLatched);
+
+    /** Selected text was copied to the clipboard. */
+    default void onCopied() {}
   }
 
   private static final int SCROLLBACK_LINES = 2000;
@@ -72,6 +77,9 @@ public final class TerminalView extends View {
   private int scrollOffset;
   private float scrollRemainder;
 
+  private final TerminalSelection selection = new TerminalSelection();
+  private boolean selecting;
+
   private boolean ctrlLatched;
   private boolean altLatched;
   private int foreground = DEFAULT_FOREGROUND;
@@ -99,6 +107,7 @@ public final class TerminalView extends View {
 
               @Override
               public boolean onSingleTapUp(MotionEvent e) {
+                clearSelection();
                 requestFocus();
                 InputMethodManager manager =
                     (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -111,8 +120,21 @@ public final class TerminalView extends View {
 
               @Override
               public boolean onScroll(MotionEvent first, MotionEvent second, float dx, float dy) {
-                scrollBy(dy);
+                if (!selecting) {
+                  scrollBy(dy);
+                }
                 return true;
+              }
+
+              @Override
+              public void onLongPress(MotionEvent e) {
+                synchronized (screen.lock()) {
+                  selection.start(rowAt(e.getY()), columnAt(e.getX()));
+                }
+                selecting = true;
+                getParent().requestDisallowInterceptTouchEvent(true);
+                performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+                invalidate();
               }
             });
   }
@@ -517,7 +539,80 @@ public final class TerminalView extends View {
 
   @Override
   public boolean onTouchEvent(MotionEvent event) {
+    if (selecting) {
+      int action = event.getActionMasked();
+      if (action == MotionEvent.ACTION_MOVE) {
+        synchronized (screen.lock()) {
+          selection.extend(rowAt(event.getY()), columnAt(event.getX()));
+        }
+        invalidate();
+        return true;
+      }
+      if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+        selecting = false;
+        copySelection();
+        return true;
+      }
+    }
     return gestures.onTouchEvent(event) || super.onTouchEvent(event);
+  }
+
+  /** The emulator row under a y coordinate of the view (negative in the scrollback). */
+  private int rowAt(float y) {
+    int viewRow = Math.max(0, Math.min(rows - 1, (int) (y / cellHeight)));
+    return viewRow - scrollbackOffset();
+  }
+
+  private int columnAt(float x) {
+    return Math.max(0, Math.min(columns - 1, (int) (x / cellWidth)));
+  }
+
+  /** How many lines the view is scrolled back; call with the screen lock held. */
+  private int scrollbackOffset() {
+    TerminalEmulator emulator = screen.emulator();
+    return emulator.isAlternateScreen() ? 0 : Math.min(scrollOffset, emulator.scrollbackSize());
+  }
+
+  private void clearSelection() {
+    synchronized (screen.lock()) {
+      selection.clear();
+    }
+    invalidate();
+  }
+
+  /** Puts the selected text on the clipboard; the highlight stays until the next tap. */
+  private void copySelection() {
+    String text;
+    synchronized (screen.lock()) {
+      text = selection.text(screen.emulator());
+    }
+    if (text.isEmpty()) {
+      return;
+    }
+    ClipboardManager clipboard =
+        (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+    if (clipboard != null) {
+      clipboard.setPrimaryClip(ClipData.newPlainText("terminal", text));
+      if (callbacks != null) {
+        callbacks.onCopied();
+      }
+    }
+  }
+
+  /** Pastes the text on the clipboard, if there is any. */
+  public void pasteFromClipboard() {
+    ClipboardManager clipboard =
+        (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+    if (clipboard == null || !clipboard.hasPrimaryClip()) {
+      return;
+    }
+    ClipData clip = clipboard.getPrimaryClip();
+    if (clip != null && clip.getItemCount() > 0) {
+      CharSequence text = clip.getItemAt(0).coerceToText(getContext());
+      if (text != null && text.length() > 0) {
+        paste(text.toString());
+      }
+    }
   }
 
   @Override
@@ -544,7 +639,7 @@ public final class TerminalView extends View {
     canvas.drawColor(background);
     synchronized (screen.lock()) {
       TerminalEmulator emulator = screen.emulator();
-      int offset = emulator.isAlternateScreen() ? 0 : Math.min(scrollOffset, emulator.scrollbackSize());
+      int offset = scrollbackOffset();
       int visible = Math.min(rows, emulator.rows());
       for (int r = 0; r < visible; r++) {
         drawRow(canvas, emulator, r - offset, r * cellHeight);
@@ -566,7 +661,7 @@ public final class TerminalView extends View {
       int attributes = emulator.attributesAt(row, column);
       int fg = TerminalPalette.argb(emulator.foregroundAt(row, column), foreground);
       int bg = TerminalPalette.argb(emulator.backgroundAt(row, column), background);
-      if ((attributes & TextStyle.INVERSE) != 0) {
+      if ((attributes & TextStyle.INVERSE) != 0 != selection.contains(row, column)) {
         int swap = fg;
         fg = bg;
         bg = swap;

@@ -75,6 +75,15 @@ public final class TerminalFragment extends Fragment {
           }
 
           @Override
+          public void onCopied() {
+            if (binding != null) {
+              android.widget.Toast.makeText(
+                      requireContext(), R.string.terminal_copied, android.widget.Toast.LENGTH_SHORT)
+                  .show();
+            }
+          }
+
+          @Override
           public void onModifiersChanged(boolean ctrlLatched, boolean altLatched) {
             if (extraKeys != null) {
               extraKeys.showModifiers(ctrlLatched, altLatched);

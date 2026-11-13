@@ -34,6 +34,8 @@ final class ExtraKeys {
     add(row, "End", KeyEncoder.KEY_END);
     add(row, "PgUp", KeyEncoder.KEY_PAGE_UP);
     add(row, "PgDn", KeyEncoder.KEY_PAGE_DOWN);
+    MaterialButton paste = button(row, context.getString(R.string.terminal_key_paste));
+    paste.setOnClickListener(v -> terminal.pasteFromClipboard());
     for (String symbol : new String[] {"|", "-", "/", "~"}) {
       addText(row, symbol);
     }
