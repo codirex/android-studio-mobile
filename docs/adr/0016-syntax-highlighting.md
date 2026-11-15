@@ -15,10 +15,9 @@ v1.0.0 wants highlighting in the editor, and later suggestions, formatters and p
 
 ## Consequences
 
-- XML, Kotlin, Gradle (Groovy and Kotlin DSL), JSON, Markdown and properties files stay plain for now. They need TextMate or Monarch grammars with extra dependencies; the choice among them is a separate decision, made when the first of these languages is added, and it only changes the mapping in `feature:editor` and the enum.
+- XML, JSON, Markdown and Gradle files are highlighted by lexers of our own, not by a Sora grammar engine (ADR-0026). Kotlin and properties files stay plain for now.
 - The Java language of `language-java` is a lexer, not a parser. It does not know about types or errors. Real analysis comes with the Java language server in v1.2.0.
 
 ## Open items
 
 - Licence: Sora is LGPL-2.1. The IDE is Apache-2.0 and uses Sora as an unmodified library. A licence review before the first release must confirm what the notices must say and whether users must be able to replace the library.
-- Choose the grammar engine for the other languages.

@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.codirex.asm.domain.editor.SourceLanguage;
+import org.codirex.asm.domain.editor.highlight.Lexer;
+import org.codirex.asm.domain.editor.highlight.Lexers;
 import org.codirex.asm.domain.project.ProjectName;
 import org.codirex.asm.feature.editor.databinding.FragmentEditorBinding;
 import org.codirex.asm.feature.editor.databinding.ItemEditorTabBinding;
@@ -220,13 +222,11 @@ public final class EditorFragment extends Fragment {
   /** The Sora language for a source language; null makes the editor show plain text. */
   @Nullable
   private static Language languageFor(SourceLanguage language) {
-    switch (language) {
-      case JAVA:
-        return new JavaLanguage();
-      case PLAIN:
-      default:
-        return null;
+    if (language == SourceLanguage.JAVA) {
+      return new JavaLanguage();
     }
+    Lexer lexer = Lexers.forLanguage(language);
+    return lexer == null ? null : new LexerLanguage(lexer);
   }
 
   private void renderTabs(EditorState state) {
