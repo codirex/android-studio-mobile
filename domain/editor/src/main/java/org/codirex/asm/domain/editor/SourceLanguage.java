@@ -10,7 +10,15 @@ public enum SourceLanguage {
   /** Anything the editor has no support for. Shown without highlighting. */
   PLAIN,
   /** Java source files. */
-  JAVA;
+  JAVA,
+  /** XML files: layouts, manifests, resources. */
+  XML,
+  /** JSON files. */
+  JSON,
+  /** Markdown documents. */
+  MARKDOWN,
+  /** Gradle build scripts, Groovy or Kotlin. */
+  GRADLE;
 
   /**
    * The language of the file at {@code path}, chosen by its extension, ignoring case. A name without
@@ -25,10 +33,23 @@ public enum SourceLanguage {
     if (dot <= 0 || dot == name.length() - 1) {
       return PLAIN;
     }
-    String extension = name.substring(dot + 1).toLowerCase(Locale.ROOT);
-    if (extension.equals("java")) {
-      return JAVA;
+    switch (name.substring(dot + 1).toLowerCase(Locale.ROOT)) {
+      case "java":
+        return JAVA;
+      case "xml":
+        return XML;
+      case "json":
+        return JSON;
+      case "md":
+      case "markdown":
+        return MARKDOWN;
+      case "gradle":
+        return GRADLE;
+      case "kts":
+        // Only the Gradle scripts: a .kts file is a build script in an Android project.
+        return name.endsWith(".gradle.kts") ? GRADLE : PLAIN;
+      default:
+        return PLAIN;
     }
-    return PLAIN;
   }
 }
