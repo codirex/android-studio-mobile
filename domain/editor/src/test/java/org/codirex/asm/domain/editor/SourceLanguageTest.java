@@ -16,6 +16,27 @@ public final class SourceLanguageTest {
   public void theExtensionIsCaseInsensitive() {
     assertEquals(SourceLanguage.JAVA, SourceLanguage.forPath("Main.JAVA"));
     assertEquals(SourceLanguage.JAVA, SourceLanguage.forPath("Main.Java"));
+    assertEquals(SourceLanguage.XML, SourceLanguage.forPath("Layout.XML"));
+  }
+
+  @Test
+  public void dataAndDocumentFiles() {
+    assertEquals(SourceLanguage.XML, SourceLanguage.forPath("app/src/main/AndroidManifest.xml"));
+    assertEquals(SourceLanguage.JSON, SourceLanguage.forPath("package.json"));
+    assertEquals(SourceLanguage.MARKDOWN, SourceLanguage.forPath("README.md"));
+    assertEquals(SourceLanguage.MARKDOWN, SourceLanguage.forPath("notes.markdown"));
+  }
+
+  @Test
+  public void gradleScripts() {
+    assertEquals(SourceLanguage.GRADLE, SourceLanguage.forPath("build.gradle"));
+    assertEquals(SourceLanguage.GRADLE, SourceLanguage.forPath("app/build.gradle.kts"));
+    assertEquals(SourceLanguage.GRADLE, SourceLanguage.forPath("settings.gradle.kts"));
+  }
+
+  @Test
+  public void otherKotlinScriptsArePlain() {
+    assertEquals(SourceLanguage.PLAIN, SourceLanguage.forPath("tool.kts"));
   }
 
   @Test
