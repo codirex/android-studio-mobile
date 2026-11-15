@@ -2,7 +2,7 @@
 
 A complete Android development environment that runs on Android itself: project creation, a code editor, a real terminal, builds and, later, language servers and a visual UI designer.
 
-> **Status: pre-alpha, architecture phase.** There is no release yet. The first milestone is [v1.0.0](docs/ROADMAP.md#v100).
+> **Status: pre-alpha.** There is no release yet. The first milestone is [v1.0.0](docs/ROADMAP.md#v100). Working today (built by CI, not yet tried on every device): projects from templates, the file tree, the editor with tabs, auto save and Java highlighting, and a terminal with sessions, copy and paste, and an install flow for its userland. Still to do for v1.0.0: the template manager screens, highlighting for XML, Gradle, JSON and Markdown, and the final userland (git, gh).
 
 ## Goals
 
@@ -30,6 +30,7 @@ targetSdk 28 is deliberate: apps targeting API 29 or higher cannot execute files
 | DI | Hilt (Dagger) |
 | Architecture components | AndroidX ViewModel, Lifecycle, Preferences, Startup |
 | Concurrency | [Clotho](https://github.com/codirex/clotho) |
+| Terminal | Own emulator, PTY and service; userland built from [termux-packages](https://github.com/termux/termux-packages) by [asm-packages](https://github.com/codirex/asm-packages) |
 | Log reading (v1.4.0) | [Codirex Trace](https://github.com/codirex/codirex-trace) |
 
 Library versions are pinned in `gradle/libs.versions.toml` when each library is first used.
