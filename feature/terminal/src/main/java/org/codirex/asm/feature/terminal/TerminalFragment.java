@@ -1,5 +1,7 @@
 package org.codirex.asm.feature.terminal;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -29,6 +31,8 @@ import org.codirex.asm.terminal.view.TerminalView;
 public final class TerminalFragment extends Fragment {
 
   private static final String ARG_DIRECTORY = "directory";
+  private static final String PREFERENCES = "terminal";
+  private static final String KEY_TEXT_SIZE = "text_size_sp";
 
   /** A terminal that starts in {@code directory}. */
   public static TerminalFragment newInstance(String directory) {
@@ -62,6 +66,12 @@ public final class TerminalFragment extends Fragment {
   @Override
   public void onViewCreated(@NonNull View view, @Nullable Bundle state) {
     calls = Executors.newSingleThreadExecutor();
+    final SharedPreferences settings =
+        requireContext().getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+    float savedSize = settings.getFloat(KEY_TEXT_SIZE, 0f);
+    if (savedSize >= 8f && savedSize <= 32f) {
+      binding.terminal.setTextSizeSp(savedSize);
+    }
     extraKeys = new ExtraKeys(binding.extraKeys, binding.terminal);
     binding.terminal.setCallbacks(
         new TerminalView.Callbacks() {
@@ -77,6 +87,11 @@ public final class TerminalFragment extends Fragment {
               binding.endedText.setText(getString(R.string.terminal_session_ended, exitCode));
               binding.endedBanner.setVisibility(View.VISIBLE);
             }
+          }
+
+          @Override
+          public void onTextSizeChanged(float sp) {
+            settings.edit().putFloat(KEY_TEXT_SIZE, sp).apply();
           }
 
           @Override

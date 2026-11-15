@@ -50,6 +50,9 @@ public final class TerminalView extends View {
 
     /** Selected text was copied to the clipboard. */
     default void onCopied() {}
+
+    /** The person changed the text size by pinching; {@code sp} is the new size. */
+    default void onTextSizeChanged(float sp) {}
   }
 
   private static final int SCROLLBACK_LINES = 2000;
@@ -108,6 +111,13 @@ public final class TerminalView extends View {
               public boolean onScaleBegin(ScaleGestureDetector detector) {
                 pinchSizeSp = textSizeSp;
                 return true;
+              }
+
+              @Override
+              public void onScaleEnd(ScaleGestureDetector detector) {
+                if (callbacks != null) {
+                  callbacks.onTextSizeChanged(textSizeSp);
+                }
               }
 
               @Override
@@ -228,6 +238,11 @@ public final class TerminalView extends View {
       applySize(getWidth(), getHeight());
     }
     invalidate();
+  }
+
+  /** The text size in scaled pixels. */
+  public float textSizeSp() {
+    return textSizeSp;
   }
 
   public void setColors(int foreground, int background) {
