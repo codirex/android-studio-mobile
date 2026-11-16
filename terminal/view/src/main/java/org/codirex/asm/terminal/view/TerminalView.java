@@ -19,6 +19,7 @@ import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.OverScroller;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.codirex.asm.terminal.emulator.TerminalEmulator;
@@ -57,6 +58,9 @@ public final class TerminalView extends View {
 
   private static final int SCROLLBACK_LINES = 2000;
   private static final float DEFAULT_TEXT_SP = 14f;
+  /** The distance a fling may cover, in pixels: far more than any scrollback. */
+  private static final int FLING_RANGE = 1_000_000_000;
+
   private static final int DEFAULT_FOREGROUND = 0xffd4d4d4;
   private static final int DEFAULT_BACKGROUND = 0xff1e1e1e;
 
@@ -65,6 +69,8 @@ public final class TerminalView extends View {
   private final char[] glyph = new char[2];
   private final GestureDetector gestures;
   private final ScaleGestureDetector scaling;
+  private final OverScroller flinger;
+  private int flingLastY;
   private float textSizeSp = DEFAULT_TEXT_SP;
   private float pinchSizeSp = DEFAULT_TEXT_SP;
 
@@ -103,6 +109,7 @@ public final class TerminalView extends View {
     textPaint.setTypeface(Typeface.MONOSPACE);
     setTextSizeSp(DEFAULT_TEXT_SP);
     screen = newScreen();
+    flinger = new OverScroller(context);
     scaling =
         new ScaleGestureDetector(
             context,
@@ -136,6 +143,29 @@ public final class TerminalView extends View {
             new GestureDetector.SimpleOnGestureListener() {
               @Override
               public boolean onDown(MotionEvent e) {
+                // A touch stops a fling that is still running.
+                flinger.forceFinished(true);
+                return true;
+              }
+
+              @Override
+              public boolean onFling(MotionEvent first, MotionEvent second, float vx, float vy) {
+                if (selecting) {
+                  return false;
+                }
+                boolean scrollable;
+                synchronized (screen.lock()) {
+                  scrollable =
+                      !screen.emulator().isAlternateScreen()
+                          && screen.emulator().scrollbackSize() > 0;
+                }
+                if (!scrollable) {
+                  return false;
+                }
+                flingLastY = 0;
+                flinger.fling(
+                    0, 0, 0, (int) vy, 0, 0, -FLING_RANGE, FLING_RANGE);
+                postInvalidateOnAnimation();
                 return true;
               }
 
@@ -564,6 +594,17 @@ public final class TerminalView extends View {
     }
   }
 
+  @Override
+  public void computeScroll() {
+    if (flinger.computeScrollOffset()) {
+      int y = flinger.getCurrY();
+      // A finger moving down (positive velocity) shows older lines, the opposite of scrollBy.
+      scrollBy(flingLastY - y);
+      flingLastY = y;
+      postInvalidateOnAnimation();
+    }
+  }
+
   private void scrollBy(float distance) {
     int maximum;
     synchronized (screen.lock()) {
@@ -666,6 +707,7 @@ public final class TerminalView extends View {
 
   @Override
   protected void onDetachedFromWindow() {
+    flinger.abortAnimation();
     detach();
     synchronized (this) {
       if (calls != null) {
