@@ -282,7 +282,7 @@ public final class BootstrapDownloaderTest {
   public void theDefaultReleasePinsTheAarch64Archive() {
     BootstrapRelease release = BootstrapRelease.DEFAULT;
     assertEquals(
-        "https://github.com/codirex/asm-packages/releases/download/bootstrap-v0/bootstrap-aarch64.zip",
+        "https://github.com/codirex/asm-packages/releases/download/bootstrap-v1/bootstrap-aarch64.zip",
         release.urlOf(BootstrapArch.AARCH64));
     assertEquals(64, release.sha256Of(BootstrapArch.AARCH64).length());
     assertEquals(null, release.sha256Of(BootstrapArch.X86_64));
