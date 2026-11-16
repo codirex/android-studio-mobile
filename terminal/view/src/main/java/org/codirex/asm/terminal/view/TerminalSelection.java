@@ -41,6 +41,35 @@ final class TerminalSelection {
     active = false;
   }
 
+  /** Moves the end that was fixed when the selection started (a handle of the selection). */
+  void moveAnchor(int row, int column) {
+    if (active) {
+      anchorRow = row;
+      anchorColumn = column;
+    }
+  }
+
+  int anchorRow() {
+    return anchorRow;
+  }
+
+  int anchorColumn() {
+    return anchorColumn;
+  }
+
+  int endRow() {
+    return endRow;
+  }
+
+  int endColumn() {
+    return endColumn;
+  }
+
+  /** Whether the anchor is the first cell in reading order (else the free end is). */
+  boolean isAnchorFirst() {
+    return anchorFirst();
+  }
+
   private boolean anchorFirst() {
     return anchorRow < endRow || (anchorRow == endRow && anchorColumn <= endColumn);
   }
