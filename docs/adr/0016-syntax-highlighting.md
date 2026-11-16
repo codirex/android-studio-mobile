@@ -9,14 +9,14 @@ v1.0.0 wants highlighting in the editor, and later suggestions, formatters and p
 ## Decision
 
 - `domain:editor` holds `SourceLanguage`, a small enum with the languages the IDE knows, and `SourceLanguage.forPath(path)` which picks one from the file name (case does not matter; a name that only starts with a dot, such as `.java`, has no extension). The mapping is pure and tested, and the editor module does not decide what a file is.
-- `feature:editor` turns a `SourceLanguage` into a Sora `Language`. The first step knows `JAVA`, which uses `language-java` (highlighting, indent after braces, bracket and quote pairs, basic completion), and `PLAIN`, which uses Sora's empty language.
+- `feature:editor` turns a `SourceLanguage` into a Sora `Language`. The first step used `language-java` for `JAVA`; ADR-0026 replaces it with TextMate grammars for every language, and `PLAIN` uses no language.
 - The language is set before the text of a document, and is set again when a renamed file changes language (for example `A.txt` to `A.java`), without resetting the text.
 - Only `feature:editor` depends on Sora, including `language-java` (ADR-0005).
 
 ## Consequences
 
-- XML, JSON, Markdown and Gradle files are highlighted by lexers of our own, not by a Sora grammar engine (ADR-0026). Kotlin and properties files stay plain for now.
-- The Java language of `language-java` is a lexer, not a parser. It does not know about types or errors. Real analysis comes with the Java language server in v1.2.0.
+- The grammar engine is TextMate (ADR-0026), which covers Java, Kotlin, Groovy, XML, JSON, Markdown and more.
+- A TextMate language is a lexer, not a parser. It does not know about types or errors. Real analysis comes with the Java language server in v1.2.0.
 
 ## Open items
 

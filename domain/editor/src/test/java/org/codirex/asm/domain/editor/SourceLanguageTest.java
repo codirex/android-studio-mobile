@@ -20,23 +20,28 @@ public final class SourceLanguageTest {
   }
 
   @Test
-  public void dataAndDocumentFiles() {
+  public void androidProjectFiles() {
     assertEquals(SourceLanguage.XML, SourceLanguage.forPath("app/src/main/AndroidManifest.xml"));
+    assertEquals(SourceLanguage.GROOVY, SourceLanguage.forPath("build.gradle"));
+    assertEquals(SourceLanguage.KOTLIN, SourceLanguage.forPath("app/build.gradle.kts"));
+    assertEquals(SourceLanguage.KOTLIN, SourceLanguage.forPath("Main.kt"));
+    assertEquals(SourceLanguage.PROPERTIES, SourceLanguage.forPath("gradle.properties"));
+  }
+
+  @Test
+  public void dataAndDocumentFiles() {
     assertEquals(SourceLanguage.JSON, SourceLanguage.forPath("package.json"));
     assertEquals(SourceLanguage.MARKDOWN, SourceLanguage.forPath("README.md"));
     assertEquals(SourceLanguage.MARKDOWN, SourceLanguage.forPath("notes.markdown"));
+    assertEquals(SourceLanguage.HTML, SourceLanguage.forPath("index.htm"));
+    assertEquals(SourceLanguage.CSS, SourceLanguage.forPath("site.css"));
   }
 
   @Test
-  public void gradleScripts() {
-    assertEquals(SourceLanguage.GRADLE, SourceLanguage.forPath("build.gradle"));
-    assertEquals(SourceLanguage.GRADLE, SourceLanguage.forPath("app/build.gradle.kts"));
-    assertEquals(SourceLanguage.GRADLE, SourceLanguage.forPath("settings.gradle.kts"));
-  }
-
-  @Test
-  public void otherKotlinScriptsArePlain() {
-    assertEquals(SourceLanguage.PLAIN, SourceLanguage.forPath("tool.kts"));
+  public void scriptFiles() {
+    assertEquals(SourceLanguage.JAVASCRIPT, SourceLanguage.forPath("app.js"));
+    assertEquals(SourceLanguage.PYTHON, SourceLanguage.forPath("tool.py"));
+    assertEquals(SourceLanguage.SHELL, SourceLanguage.forPath("scripts/run.sh"));
   }
 
   @Test

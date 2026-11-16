@@ -9,16 +9,23 @@ import java.util.Locale;
 public enum SourceLanguage {
   /** Anything the editor has no support for. Shown without highlighting. */
   PLAIN,
-  /** Java source files. */
   JAVA,
+  /** Kotlin sources and scripts, including {@code build.gradle.kts}. */
+  KOTLIN,
+  /** Groovy sources, including {@code build.gradle}. */
+  GROOVY,
   /** XML files: layouts, manifests, resources. */
   XML,
-  /** JSON files. */
   JSON,
-  /** Markdown documents. */
   MARKDOWN,
-  /** Gradle build scripts, Groovy or Kotlin. */
-  GRADLE;
+  HTML,
+  JAVASCRIPT,
+  CSS,
+  PYTHON,
+  /** Shell scripts. */
+  SHELL,
+  /** {@code .properties} and {@code .ini} style files. */
+  PROPERTIES;
 
   /**
    * The language of the file at {@code path}, chosen by its extension, ignoring case. A name without
@@ -36,18 +43,37 @@ public enum SourceLanguage {
     switch (name.substring(dot + 1).toLowerCase(Locale.ROOT)) {
       case "java":
         return JAVA;
+      case "kt":
+      case "kts":
+        return KOTLIN;
+      case "gradle":
+      case "groovy":
+        return GROOVY;
       case "xml":
+      case "svg":
         return XML;
       case "json":
         return JSON;
       case "md":
       case "markdown":
         return MARKDOWN;
-      case "gradle":
-        return GRADLE;
-      case "kts":
-        // Only the Gradle scripts: a .kts file is a build script in an Android project.
-        return name.endsWith(".gradle.kts") ? GRADLE : PLAIN;
+      case "html":
+      case "htm":
+        return HTML;
+      case "js":
+      case "mjs":
+      case "cjs":
+        return JAVASCRIPT;
+      case "css":
+        return CSS;
+      case "py":
+        return PYTHON;
+      case "sh":
+      case "bash":
+        return SHELL;
+      case "properties":
+      case "ini":
+        return PROPERTIES;
       default:
         return PLAIN;
     }

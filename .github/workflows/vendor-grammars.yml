@@ -1,0 +1,30 @@
+name: Vendor grammars
+
+# Downloads the TextMate grammars and themes of the editor from their pinned sources
+# (tools/vendor_grammars.py) and commits them, so that builds need no network for them (ADR-0026).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: python3 tools/vendor_grammars.py
+
+      - name: Commit what changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add feature/editor/src/main/assets
+          if git diff --cached --quiet; then
+            echo "Nothing changed"
+          else
+            git commit -m "chore(editor): vendor the TextMate grammars and themes"
+            git push
+          fi
