@@ -15,6 +15,8 @@ import org.codirex.asm.feature.filetree.FileTreeNavigator;
 import org.codirex.asm.feature.project.CreateProjectFragment;
 import org.codirex.asm.feature.project.ProjectListFragment;
 import org.codirex.asm.feature.project.ProjectNavigator;
+import org.codirex.asm.feature.project.TemplateEditFragment;
+import org.codirex.asm.feature.project.TemplateListFragment;
 import org.codirex.asm.feature.terminal.TerminalFragment;
 
 /**
@@ -57,6 +59,12 @@ public final class MainActivity extends AppCompatActivity
     if (terminal != null) {
       terminal.setVisible(workspace() != null);
     }
+    // The template manager is offered on the project list, where a new project starts.
+    MenuItem templates = menu.findItem(R.id.action_templates);
+    if (templates != null) {
+      Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
+      templates.setVisible(current instanceof ProjectListFragment);
+    }
     return super.onPrepareOptionsMenu(menu);
   }
 
@@ -64,6 +72,10 @@ public final class MainActivity extends AppCompatActivity
   public boolean onOptionsItemSelected(MenuItem item) {
     if (item.getItemId() == R.id.action_terminal) {
       showTerminal();
+      return true;
+    }
+    if (item.getItemId() == R.id.action_templates) {
+      showTemplates();
       return true;
     }
     return super.onOptionsItemSelected(item);
@@ -97,6 +109,29 @@ public final class MainActivity extends AppCompatActivity
 
   @Override
   public void onProjectCreated() {
+    getSupportFragmentManager().popBackStack();
+  }
+
+  @Override
+  public void showTemplates() {
+    getSupportFragmentManager()
+        .beginTransaction()
+        .replace(R.id.container, new TemplateListFragment())
+        .addToBackStack(null)
+        .commit();
+  }
+
+  @Override
+  public void showTemplateEditor(String templateId) {
+    getSupportFragmentManager()
+        .beginTransaction()
+        .replace(R.id.container, TemplateEditFragment.newInstance(templateId))
+        .addToBackStack(null)
+        .commit();
+  }
+
+  @Override
+  public void onTemplateSaved() {
     getSupportFragmentManager().popBackStack();
   }
 
