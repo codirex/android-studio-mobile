@@ -17,4 +17,13 @@ public interface ProjectNavigator {
 
   /** A project was created: leave the create screen. */
   void onProjectCreated();
+
+  /** Show the template manager. */
+  void showTemplates();
+
+  /** Show the editor of the custom template with {@code templateId}. */
+  void showTemplateEditor(String templateId);
+
+  /** A template was saved: leave the editor. */
+  void onTemplateSaved();
 }
