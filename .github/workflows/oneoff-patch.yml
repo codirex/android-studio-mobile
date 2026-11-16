@@ -1,0 +1,24 @@
+name: One-off patch
+
+# Runs tools/oneoff_patch.py on the repository, commits the result and removes the script.
+# Used for edits to files too large to push by hand; delete this workflow after use.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply
+        run: |
+          python3 tools/oneoff_patch.py
+          git rm -q tools/oneoff_patch.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(terminal): fling scrolling in the terminal view"
+          git push
