@@ -16,15 +16,14 @@ import com.google.android.material.tabs.TabLayout;
 import dagger.hilt.android.AndroidEntryPoint;
 import io.github.rosemoe.sora.event.ContentChangeEvent;
 import io.github.rosemoe.sora.lang.Language;
-import io.github.rosemoe.sora.langs.java.JavaLanguage;
+import io.github.rosemoe.sora.langs.textmate.TextMateColorScheme;
+import io.github.rosemoe.sora.langs.textmate.registry.ThemeRegistry;
 import io.github.rosemoe.sora.widget.schemes.SchemeDarcula;
 import io.github.rosemoe.sora.widget.schemes.SchemeGitHub;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.codirex.asm.domain.editor.SourceLanguage;
-import org.codirex.asm.domain.editor.highlight.Lexer;
-import org.codirex.asm.domain.editor.highlight.Lexers;
 import org.codirex.asm.domain.project.ProjectName;
 import org.codirex.asm.feature.editor.databinding.FragmentEditorBinding;
 import org.codirex.asm.feature.editor.databinding.ItemEditorTabBinding;
@@ -124,7 +123,14 @@ public final class EditorFragment extends Fragment {
     boolean night =
         (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
             == Configuration.UI_MODE_NIGHT_YES;
-    binding.editor.setColorScheme(night ? new SchemeDarcula() : new SchemeGitHub());
+    // The TextMate colour scheme follows the theme of the TextMate registry (ADR-0026); without
+    // TextMate the editor keeps the built-in schemes and shows plain text.
+    if (TextMateSetup.ensure(requireContext())) {
+      TextMateSetup.useTheme(night);
+      binding.editor.setColorScheme(TextMateColorScheme.create(ThemeRegistry.getInstance()));
+    } else {
+      binding.editor.setColorScheme(night ? new SchemeDarcula() : new SchemeGitHub());
+    }
     binding.editor.subscribeAlways(ContentChangeEvent.class, this::onContentChanged);
 
     binding.showFiles.setOnClickListener(
@@ -222,11 +228,7 @@ public final class EditorFragment extends Fragment {
   /** The Sora language for a source language; null makes the editor show plain text. */
   @Nullable
   private static Language languageFor(SourceLanguage language) {
-    if (language == SourceLanguage.JAVA) {
-      return new JavaLanguage();
-    }
-    Lexer lexer = Lexers.forLanguage(language);
-    return lexer == null ? null : new LexerLanguage(lexer);
+    return TextMateSetup.languageFor(language);
   }
 
   private void renderTabs(EditorState state) {

@@ -33,6 +33,6 @@ sora-oniguruma-native = { module = "io.github.rosemoe:oniguruma-native", version
 junit4 = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]
-android-application = { id = "com.android.application", version = "agp" }
+android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
