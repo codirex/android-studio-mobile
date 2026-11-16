@@ -138,12 +138,23 @@ public final class BootstrapDownloaderTest {
   }
 
   private BootstrapDownloader downloader(String folder, String hash) {
+    return downloaderAt(base, folder, hash);
+  }
+
+  private BootstrapDownloader downloaderAt(String root, String folder, String hash) {
     Map<BootstrapArch, String> hashes = new EnumMap<>(BootstrapArch.class);
     if (hash != null) {
       hashes.put(BootstrapArch.AARCH64, hash);
     }
     return new BootstrapDownloader(
-        new BootstrapRelease(base + folder + "/", hashes), 2_000, 1_000);
+        new BootstrapRelease(root + folder + "/", hashes), 2_000, 1_000);
+  }
+
+  /** A port on the loopback address where nothing listens: opened and closed right here. */
+  private int closedPort() throws IOException {
+    try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
+      return socket.getLocalPort();
+    }
   }
 
   private void assertFails(Reason reason, BootstrapDownloader downloader, BootstrapArch arch,
@@ -225,8 +236,8 @@ public final class BootstrapDownloaderTest {
 
   @Test
   public void aServerThatIsNotThereIsANetworkError() throws Exception {
-    BootstrapDownloader gone = downloader("/rel", sha256(archive));
-    server.stop();
+    BootstrapDownloader gone =
+        downloaderAt("http://127.0.0.1:" + closedPort(), "/rel", sha256(archive));
     assertFails(Reason.NETWORK, gone, BootstrapArch.AARCH64, null);
     assertNoFilesLeft();
   }
