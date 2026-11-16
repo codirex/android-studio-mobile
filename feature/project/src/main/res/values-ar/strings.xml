@@ -38,4 +38,37 @@
     <string name="error_storage">فشل التخزين. تحقق من المساحة الحرة وحاول مرة أخرى.</string>
     <string name="error_invalid_metadata">ملف إعدادات هذا المشروع تالف أو من إصدار أحدث.</string>
     <string name="error_not_found">المشروع لم يعد موجودًا.</string>
+
+    <string name="template_list_title">القوالب</string>
+    <string name="template_details">%1$s · %2$s</string>
+    <string name="template_builtin">مدمج</string>
+    <string name="template_custom">مخصص</string>
+    <string name="template_edit">تعديل</string>
+    <string name="template_duplicate">نسخ</string>
+    <string name="template_delete">حذف</string>
+    <string name="template_duplicate_title">نسخ القالب</string>
+    <string name="template_copy_name">نسخة من %1$s</string>
+    <string name="template_name_label">اسم القالب</string>
+    <string name="template_delete_title">حذف القالب؟</string>
+    <string name="template_delete_message">سيتم حذف «%1$s». المشاريع التي أُنشئت منه من قبل لن تتغير.</string>
+
+    <string name="template_edit_title">تعديل القالب</string>
+    <string name="template_files_label">الملفات</string>
+    <string name="template_add_file">إضافة ملف</string>
+    <string name="template_save">حفظ</string>
+    <string name="template_missing">هذا القالب لم يعد موجودًا.</string>
+    <string name="template_file_title">ملف القالب</string>
+    <string name="template_file_ok">موافق</string>
+    <string name="template_file_path_label">مسار الملف</string>
+    <string name="template_file_content_label">المحتوى</string>
+    <string name="template_file_size">%1$d حرفًا</string>
+    <string name="template_file_remove_title">إزالة الملف؟</string>
+    <string name="template_file_remove_message">ستتم إزالة «%1$s» من القالب.</string>
+    <string name="template_file_remove">إزالة</string>
+
+    <string name="template_error_path">أدخل مسار الملف.</string>
+    <string name="template_error_invalid">القالب غير صالح: %1$s</string>
+    <string name="template_error_unknown_variable">أحد المتغيرات في القالب غير موجود: %1$s</string>
+    <string name="template_error_malformed">أحد المتغيرات في القالب غير مغلق: %1$s</string>
+    <string name="template_error_unsafe_path">مسار ملف غير مسموح: %1$s</string>
 </resources>

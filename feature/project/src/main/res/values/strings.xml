@@ -38,4 +38,37 @@
     <string name="error_storage">The storage failed. Check the free space and try again.</string>
     <string name="error_invalid_metadata">This project\'s settings file is damaged or from a newer version.</string>
     <string name="error_not_found">The project no longer exists.</string>
+
+    <string name="template_list_title">Templates</string>
+    <string name="template_details">%1$s · %2$s</string>
+    <string name="template_builtin">Built-in</string>
+    <string name="template_custom">Custom</string>
+    <string name="template_edit">Edit</string>
+    <string name="template_duplicate">Duplicate</string>
+    <string name="template_delete">Delete</string>
+    <string name="template_duplicate_title">Duplicate template</string>
+    <string name="template_copy_name">%1$s copy</string>
+    <string name="template_name_label">Template name</string>
+    <string name="template_delete_title">Delete template?</string>
+    <string name="template_delete_message">“%1$s” will be deleted. Projects already created from it are not changed.</string>
+
+    <string name="template_edit_title">Edit template</string>
+    <string name="template_files_label">Files</string>
+    <string name="template_add_file">Add file</string>
+    <string name="template_save">Save</string>
+    <string name="template_missing">This template no longer exists.</string>
+    <string name="template_file_title">Template file</string>
+    <string name="template_file_ok">OK</string>
+    <string name="template_file_path_label">File path</string>
+    <string name="template_file_content_label">Content</string>
+    <string name="template_file_size">%1$d characters</string>
+    <string name="template_file_remove_title">Remove file?</string>
+    <string name="template_file_remove_message">“%1$s” will be removed from the template.</string>
+    <string name="template_file_remove">Remove</string>
+
+    <string name="template_error_path">Enter a file path.</string>
+    <string name="template_error_invalid">The template is not valid: %1$s</string>
+    <string name="template_error_unknown_variable">A placeholder names a variable that does not exist: %1$s</string>
+    <string name="template_error_malformed">A placeholder is not closed: %1$s</string>
+    <string name="template_error_unsafe_path">A file path is not allowed: %1$s</string>
 </resources>
