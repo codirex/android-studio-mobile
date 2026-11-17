@@ -31,6 +31,8 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0023](0023-pty-native.md) | Pseudo-terminals in native code | Proposed |
 | [0024](0024-terminal-service.md) | The terminal service and its protocol | Proposed |
 | [0025](0025-terminal-view.md) | The terminal view | Proposed |
+| [0026](0026-textmate-highlighting.md) | Syntax highlighting with TextMate grammars | Proposed |
+| [0027](0027-toolchain-jdk.md) | The toolchain: JDK management | Proposed |
 
 ## Template
 

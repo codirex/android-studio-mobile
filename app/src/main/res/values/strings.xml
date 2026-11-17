@@ -3,4 +3,5 @@
     <string name="app_name">Android Studio Mobile</string>
     <string name="action_terminal">Terminal</string>
     <string name="action_templates">Templates</string>
+    <string name="action_toolchain">Toolchain</string>
 </resources>

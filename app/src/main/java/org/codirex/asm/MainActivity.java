@@ -18,6 +18,8 @@ import org.codirex.asm.feature.project.ProjectNavigator;
 import org.codirex.asm.feature.project.TemplateEditFragment;
 import org.codirex.asm.feature.project.TemplateListFragment;
 import org.codirex.asm.feature.terminal.TerminalFragment;
+import org.codirex.asm.feature.toolchain.ToolchainFragment;
+import org.codirex.asm.feature.toolchain.ToolchainNavigator;
 
 /**
  * The single activity. It hosts the screens of the features and implements their navigation
@@ -25,7 +27,7 @@ import org.codirex.asm.feature.terminal.TerminalFragment;
  */
 @AndroidEntryPoint
 public final class MainActivity extends AppCompatActivity
-    implements ProjectNavigator, FileTreeNavigator, EditorNavigator {
+    implements ProjectNavigator, FileTreeNavigator, EditorNavigator, ToolchainNavigator {
 
   private ActivityMainBinding binding;
 
@@ -65,6 +67,11 @@ public final class MainActivity extends AppCompatActivity
       Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
       templates.setVisible(current instanceof ProjectListFragment);
     }
+    MenuItem toolchain = menu.findItem(R.id.action_toolchain);
+    if (toolchain != null) {
+      Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
+      toolchain.setVisible(current instanceof ProjectListFragment);
+    }
     return super.onPrepareOptionsMenu(menu);
   }
 
@@ -76,6 +83,10 @@ public final class MainActivity extends AppCompatActivity
     }
     if (item.getItemId() == R.id.action_templates) {
       showTemplates();
+      return true;
+    }
+    if (item.getItemId() == R.id.action_toolchain) {
+      showToolchain();
       return true;
     }
     return super.onOptionsItemSelected(item);
@@ -133,6 +144,31 @@ public final class MainActivity extends AppCompatActivity
   @Override
   public void onTemplateSaved() {
     getSupportFragmentManager().popBackStack();
+  }
+
+  private void showToolchain() {
+    getSupportFragmentManager()
+        .beginTransaction()
+        .replace(R.id.container, new ToolchainFragment())
+        .addToBackStack(null)
+        .commit();
+  }
+
+  /** Installs a package of the userland by running the package manager in a terminal (ADR-0027). */
+  @Override
+  public void installPackage(String packageName) {
+    // The names come from the domain's offers; the check keeps anything else out of the command.
+    if (!packageName.matches("[a-z0-9][a-z0-9.+-]*")) {
+      return;
+    }
+    File home = new File(getFilesDir(), "home");
+    getSupportFragmentManager()
+        .beginTransaction()
+        .replace(
+            R.id.container,
+            TerminalFragment.newInstance(home.getPath(), "pkg install -y " + packageName))
+        .addToBackStack(null)
+        .commit();
   }
 
   @Override

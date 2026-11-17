@@ -31,6 +31,7 @@ import org.codirex.asm.terminal.view.TerminalView;
 public final class TerminalFragment extends Fragment {
 
   private static final String ARG_DIRECTORY = "directory";
+  private static final String ARG_COMMAND = "command";
   private static final String PREFERENCES = "terminal";
   private static final String KEY_TEXT_SIZE = "text_size_sp";
 
@@ -40,6 +41,16 @@ public final class TerminalFragment extends Fragment {
     Bundle args = new Bundle();
     args.putString(ARG_DIRECTORY, directory);
     fragment.setArguments(args);
+    return fragment;
+  }
+
+  /**
+   * A terminal that starts in {@code directory} and runs {@code command} in a new session as soon
+   * as it is shown, as if it were typed. The person sees the command and its output.
+   */
+  public static TerminalFragment newInstance(String directory, String command) {
+    TerminalFragment fragment = newInstance(directory);
+    fragment.requireArguments().putString(ARG_COMMAND, command);
     return fragment;
   }
 
@@ -293,7 +304,8 @@ public final class TerminalFragment extends Fragment {
 
   /** Shows the sessions of the service, opening one if there is none. */
   private void startSession() {
-    loadSessions(-1, false);
+    // A command runs in a session of its own, not in one that is already busy.
+    loadSessions(-1, requireArguments().containsKey(ARG_COMMAND));
   }
 
   /**
@@ -363,6 +375,17 @@ public final class TerminalFragment extends Fragment {
     }
     updatingTabs = false;
     showSession(selected);
+    runPendingCommand();
+  }
+
+  /** Types the command this screen was asked to run, once; the session shows it and its output. */
+  private void runPendingCommand() {
+    Bundle args = requireArguments();
+    String command = args.getString(ARG_COMMAND);
+    if (command != null && binding != null) {
+      args.remove(ARG_COMMAND);
+      binding.terminal.typeText(command + "\n");
+    }
   }
 
   /** Attaches the view to a session of the service. */

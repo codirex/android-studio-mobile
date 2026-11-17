@@ -2,4 +2,5 @@
 <resources>
     <string name="action_terminal">الطرفية</string>
     <string name="action_templates">القوالب</string>
+    <string name="action_toolchain">أدوات التطوير</string>
 </resources>

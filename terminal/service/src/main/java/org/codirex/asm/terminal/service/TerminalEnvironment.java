@@ -62,7 +62,46 @@ final class TerminalEnvironment {
         break;
       }
     }
+    File javaHome = javaHome();
+    if (javaHome != null) {
+      env.put("JAVA_HOME", javaHome.getPath());
+    }
     return env;
+  }
+
+  /**
+   * The newest JDK of the userland: a folder {@code lib/jvm/java-NN-...} with a {@code bin/java}.
+   * {@code null} while no JDK is installed (ADR-0027).
+   */
+  File javaHome() {
+    File[] folders = new File(prefix, "lib/jvm").listFiles();
+    if (folders == null) {
+      return null;
+    }
+    File best = null;
+    int bestVersion = -1;
+    for (File folder : folders) {
+      int version = majorVersionOf(folder.getName());
+      if (version > bestVersion && new File(folder, "bin/java").isFile()) {
+        best = folder;
+        bestVersion = version;
+      }
+    }
+    return best;
+  }
+
+  /** 17 for {@code java-17-openjdk}; -1 for a name that is not a JDK folder. */
+  static int majorVersionOf(String folderName) {
+    if (!folderName.startsWith("java-")) {
+      return -1;
+    }
+    int end = folderName.indexOf('-', 5);
+    String digits = end < 0 ? folderName.substring(5) : folderName.substring(5, end);
+    try {
+      return Integer.parseInt(digits);
+    } catch (NumberFormatException e) {
+      return -1;
+    }
   }
 
   /** The directory a session starts in: the asked one if it exists, else the home directory. */
