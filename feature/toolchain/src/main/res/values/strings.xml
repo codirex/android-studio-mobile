@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="toolchain_title">Toolchain</string>
+    <string name="toolchain_intro">Java development tools for this device. Installing opens the terminal and runs the package manager, so you can see what it does.</string>
+    <string name="toolchain_failed">The toolchain could not be read.</string>
+    <string name="jdk_name">JDK %1$d</string>
+    <string name="jdk_installed">Installed · %1$s</string>
+    <string name="jdk_installed_version">Installed · %1$s · %2$s</string>
+    <string name="jdk_not_installed">Not installed</string>
+    <string name="jdk_install">Install</string>
+</resources>
