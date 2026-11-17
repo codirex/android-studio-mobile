@@ -80,6 +80,39 @@
       "name": "ini",
       "scopeName": "source.ini",
       "grammar": "textmate/ini/syntaxes/ini.tmLanguage.json"
+    },
+    {
+      "name": "yaml",
+      "scopeName": "source.yaml",
+      "grammar": "textmate/yaml/syntaxes/yaml.tmLanguage.json",
+      "languageConfiguration": "textmate/yaml/language-configuration.json"
+    },
+    {
+      "name": "yaml-1.2",
+      "scopeName": "source.yaml.1.2",
+      "grammar": "textmate/yaml/syntaxes/yaml-1.2.tmLanguage.json"
+    },
+    {
+      "name": "yaml-embedded",
+      "scopeName": "source.yaml.embedded",
+      "grammar": "textmate/yaml/syntaxes/yaml-embedded.tmLanguage.json"
+    },
+    {
+      "name": "c",
+      "scopeName": "source.c",
+      "grammar": "textmate/cpp/syntaxes/c.tmLanguage.json",
+      "languageConfiguration": "textmate/cpp/language-configuration.json"
+    },
+    {
+      "name": "cpp",
+      "scopeName": "source.cpp",
+      "grammar": "textmate/cpp/syntaxes/cpp.tmLanguage.json",
+      "languageConfiguration": "textmate/cpp/language-configuration.json"
+    },
+    {
+      "name": "cpp-embedded-macro",
+      "scopeName": "source.cpp.embedded.macro",
+      "grammar": "textmate/cpp/syntaxes/cpp.embedded.macro.tmLanguage.json"
     }
   ]
 }

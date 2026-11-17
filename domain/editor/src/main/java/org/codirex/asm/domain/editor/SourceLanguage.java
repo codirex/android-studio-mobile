@@ -25,7 +25,12 @@ public enum SourceLanguage {
   /** Shell scripts. */
   SHELL,
   /** {@code .properties} and {@code .ini} style files. */
-  PROPERTIES;
+  PROPERTIES,
+  YAML,
+  /** C sources and headers ({@code .h} is C). */
+  C,
+  /** C++ sources and headers. */
+  CPP;
 
   /**
    * The language of the file at {@code path}, chosen by its extension, ignoring case. A name without
@@ -74,6 +79,19 @@ public enum SourceLanguage {
       case "properties":
       case "ini":
         return PROPERTIES;
+      case "yaml":
+      case "yml":
+        return YAML;
+      case "c":
+      case "h":
+        return C;
+      case "cpp":
+      case "cc":
+      case "cxx":
+      case "hpp":
+      case "hh":
+      case "hxx":
+        return CPP;
       default:
         return PLAIN;
     }

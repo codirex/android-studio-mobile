@@ -47,6 +47,16 @@ FILES = {
     "shellscript/syntaxes/shell-unix-bash.tmLanguage.json": VS + "shellscript/syntaxes/shell-unix-bash.tmLanguage.json",
     "shellscript/language-configuration.json": VS + "shellscript/language-configuration.json",
     "ini/syntaxes/ini.tmLanguage.json": VS + "ini/syntaxes/ini.tmLanguage.json",
+    # YAML: the main grammar includes the 1.2 grammar and the embedded one, so all three are kept.
+    "yaml/syntaxes/yaml.tmLanguage.json": VS + "yaml/syntaxes/yaml.tmLanguage.json",
+    "yaml/syntaxes/yaml-1.2.tmLanguage.json": VS + "yaml/syntaxes/yaml-1.2.tmLanguage.json",
+    "yaml/syntaxes/yaml-embedded.tmLanguage.json": VS + "yaml/syntaxes/yaml-embedded.tmLanguage.json",
+    "yaml/language-configuration.json": VS + "yaml/language-configuration.json",
+    # C and C++ share one language configuration; the C++ grammar includes the macro grammar.
+    "cpp/syntaxes/c.tmLanguage.json": VS + "cpp/syntaxes/c.tmLanguage.json",
+    "cpp/syntaxes/cpp.tmLanguage.json": VS + "cpp/syntaxes/cpp.tmLanguage.json",
+    "cpp/syntaxes/cpp.embedded.macro.tmLanguage.json": VS + "cpp/syntaxes/cpp.embedded.macro.tmLanguage.json",
+    "cpp/language-configuration.json": VS + "cpp/language-configuration.json",
 }
 
 

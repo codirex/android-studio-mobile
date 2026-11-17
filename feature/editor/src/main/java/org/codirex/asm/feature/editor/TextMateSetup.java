@@ -101,6 +101,12 @@ final class TextMateSetup {
         return "source.shell";
       case PROPERTIES:
         return "source.ini";
+      case YAML:
+        return "source.yaml";
+      case C:
+        return "source.c";
+      case CPP:
+        return "source.cpp";
       case PLAIN:
       default:
         return null;

@@ -3,7 +3,7 @@
 The files in this folder are not written by this project. They are downloaded by
 `tools/vendor_grammars.py` from the sources below, each at a fixed commit or tag.
 
-- `groovy`, `json`, `css`, `shellscript`, `ini`: the built-in extensions of
+- `groovy`, `json`, `css`, `shellscript`, `ini`, `yaml`, `cpp` (the C and C++ grammars): the built-in extensions of
   [microsoft/vscode](https://github.com/microsoft/vscode) (MIT licence, Copyright Microsoft
   Corporation). Several of them were converted from TextMate bundles and name the original in the
   `information_for_contributors` header of the file.
