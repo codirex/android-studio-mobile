@@ -23,16 +23,19 @@ dependencies {
     implementation(project(":domain:editor"))
     implementation(project(":domain:filetree"))
     implementation(project(":domain:template"))
+    implementation(project(":domain:environment"))
     implementation(project(":domain:toolchain"))
 
     // The app wires data modules to the domain ports through Hilt; features never see them.
     implementation(project(":data:project"))
     implementation(project(":data:template"))
+    implementation(project(":data:environment"))
     implementation(project(":data:toolchain"))
     implementation(project(":feature:editor"))
     implementation(project(":feature:filetree"))
     implementation(project(":feature:project"))
     implementation(project(":feature:terminal"))
+    implementation(project(":feature:environment"))
     implementation(project(":feature:toolchain"))
 
     implementation(libs.hilt.android)

@@ -18,6 +18,7 @@ import org.codirex.asm.feature.project.ProjectNavigator;
 import org.codirex.asm.feature.project.TemplateEditFragment;
 import org.codirex.asm.feature.project.TemplateListFragment;
 import org.codirex.asm.feature.terminal.TerminalFragment;
+import org.codirex.asm.feature.environment.EnvironmentFragment;
 import org.codirex.asm.feature.toolchain.ToolchainFragment;
 import org.codirex.asm.feature.toolchain.ToolchainNavigator;
 
@@ -72,6 +73,11 @@ public final class MainActivity extends AppCompatActivity
       Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
       toolchain.setVisible(current instanceof ProjectListFragment);
     }
+    MenuItem environment = menu.findItem(R.id.action_environment);
+    if (environment != null) {
+      Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
+      environment.setVisible(current instanceof ProjectListFragment);
+    }
     return super.onPrepareOptionsMenu(menu);
   }
 
@@ -87,6 +93,10 @@ public final class MainActivity extends AppCompatActivity
     }
     if (item.getItemId() == R.id.action_toolchain) {
       showToolchain();
+      return true;
+    }
+    if (item.getItemId() == R.id.action_environment) {
+      showEnvironment();
       return true;
     }
     return super.onOptionsItemSelected(item);
@@ -144,6 +154,14 @@ public final class MainActivity extends AppCompatActivity
   @Override
   public void onTemplateSaved() {
     getSupportFragmentManager().popBackStack();
+  }
+
+  private void showEnvironment() {
+    getSupportFragmentManager()
+        .beginTransaction()
+        .replace(R.id.container, new EnvironmentFragment())
+        .addToBackStack(null)
+        .commit();
   }
 
   private void showToolchain() {

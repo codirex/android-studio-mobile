@@ -33,6 +33,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0025](0025-terminal-view.md) | The terminal view | Proposed |
 | [0026](0026-textmate-highlighting.md) | Syntax highlighting with TextMate grammars | Proposed |
 | [0027](0027-toolchain-jdk.md) | The toolchain: JDK management | Proposed |
+| [0028](0028-environment-variables.md) | Custom environment variables of the terminal | Proposed |
 
 ## Template
 
