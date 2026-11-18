@@ -1,11 +1,17 @@
 package org.codirex.asm.terminal.service;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import org.codirex.asm.terminal.bootstrap.BootstrapInstaller;
 
 /**
@@ -19,12 +25,18 @@ final class TerminalEnvironment {
     "lib/libtermux-exec-ld-preload.so", "lib/libtermux-exec.so"
   };
 
+  /** Names the person cannot change: the terminal needs them (ADR-0028, as in the domain). */
+  private static final List<String> RESERVED =
+      Arrays.asList("HOME", "PREFIX", "SHELL", "LD_PRELOAD");
+
   private final File prefix;
   private final File home;
+  private final File environmentFile;
 
   TerminalEnvironment(File filesDirectory) {
     this.prefix = BootstrapInstaller.prefixOf(filesDirectory);
     this.home = BootstrapInstaller.homeOf(filesDirectory);
+    this.environmentFile = new File(filesDirectory, "environment.properties");
   }
 
   File home() {
@@ -66,7 +78,50 @@ final class TerminalEnvironment {
     if (javaHome != null) {
       env.put("JAVA_HOME", javaHome.getPath());
     }
+    // The person's own variables come last, so they can change what is set above (ADR-0028).
+    env.putAll(customVariables());
     return env;
+  }
+
+  /**
+   * The variables the person set, read from {@code files/environment.properties} (written by {@code
+   * data:environment}, same format). Entries with an invalid or reserved name are ignored; an
+   * unreadable file means none.
+   */
+  Map<String, String> customVariables() {
+    Map<String, String> custom = new LinkedHashMap<>();
+    if (!environmentFile.isFile()) {
+      return custom;
+    }
+    Properties properties = new Properties();
+    try (Reader reader =
+        new InputStreamReader(new FileInputStream(environmentFile), StandardCharsets.UTF_8)) {
+      properties.load(reader);
+    } catch (IOException e) {
+      return custom;
+    }
+    for (String name : properties.stringPropertyNames()) {
+      if (isValidName(name) && !RESERVED.contains(name)) {
+        custom.put(name, properties.getProperty(name));
+      }
+    }
+    return custom;
+  }
+
+  /** Letters, digits and underscores, not starting with a digit. */
+  static boolean isValidName(String name) {
+    if (name.isEmpty()) {
+      return false;
+    }
+    for (int i = 0; i < name.length(); i++) {
+      char c = name.charAt(i);
+      boolean letter = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
+      boolean digit = c >= '0' && c <= '9';
+      if (!letter && !(digit && i > 0)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
