@@ -21,6 +21,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_gradle"
+        android:title="@string/action_gradle"
+        android:visible="false"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_terminal"
         android:title="@string/action_terminal"
         android:visible="false"

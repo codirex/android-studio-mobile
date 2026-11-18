@@ -4,12 +4,15 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import dagger.hilt.android.AndroidEntryPoint;
 import java.io.File;
+import java.util.List;
 import org.codirex.asm.databinding.ActivityMainBinding;
 import org.codirex.asm.domain.project.ProjectName;
+import org.codirex.asm.domain.toolchain.GradleTask;
 import org.codirex.asm.feature.editor.EditorNavigator;
 import org.codirex.asm.feature.filetree.FileTreeNavigator;
 import org.codirex.asm.feature.project.CreateProjectFragment;
@@ -62,6 +65,11 @@ public final class MainActivity extends AppCompatActivity
     if (terminal != null) {
       terminal.setVisible(workspace() != null);
     }
+    // Gradle tasks run in the folder of the open project, like the terminal.
+    MenuItem gradle = menu.findItem(R.id.action_gradle);
+    if (gradle != null) {
+      gradle.setVisible(workspace() != null);
+    }
     // The template manager is offered on the project list, where a new project starts.
     MenuItem templates = menu.findItem(R.id.action_templates);
     if (templates != null) {
@@ -85,6 +93,10 @@ public final class MainActivity extends AppCompatActivity
   public boolean onOptionsItemSelected(MenuItem item) {
     if (item.getItemId() == R.id.action_terminal) {
       showTerminal();
+      return true;
+    }
+    if (item.getItemId() == R.id.action_gradle) {
+      showGradleTasks();
       return true;
     }
     if (item.getItemId() == R.id.action_templates) {
@@ -231,6 +243,40 @@ public final class MainActivity extends AppCompatActivity
     getSupportFragmentManager()
         .beginTransaction()
         .replace(R.id.container, TerminalFragment.newInstance(directory.getPath()))
+        .addToBackStack(null)
+        .commit();
+  }
+
+  /**
+   * Offers the common Gradle tasks of the open project and runs the chosen one in a terminal, so
+   * the person sees the build output (ADR-0029).
+   */
+  private void showGradleTasks() {
+    if (workspace() == null) {
+      return;
+    }
+    final List<GradleTask> tasks = GradleTask.common();
+    CharSequence[] labels = new CharSequence[tasks.size()];
+    for (int i = 0; i < labels.length; i++) {
+      labels[i] = tasks.get(i).name();
+    }
+    new AlertDialog.Builder(this)
+        .setTitle(R.string.gradle_title)
+        .setItems(labels, (dialog, which) -> runGradle(tasks.get(which)))
+        .show();
+  }
+
+  private void runGradle(GradleTask task) {
+    WorkspaceFragment workspace = workspace();
+    if (workspace == null) {
+      return;
+    }
+    File directory = new File(getFilesDir(), "projects/" + workspace.project().value());
+    boolean wrapper = new File(directory, "gradlew").isFile();
+    getSupportFragmentManager()
+        .beginTransaction()
+        .replace(
+            R.id.container, TerminalFragment.newInstance(directory.getPath(), task.command(wrapper)))
         .addToBackStack(null)
         .commit();
   }
