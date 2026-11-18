@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="environment_title">Environment variables</string>
+    <string name="environment_intro">Variables set in every terminal session. A change applies to sessions you open afterwards.</string>
+    <string name="environment_empty">No variables yet.</string>
+    <string name="environment_add">Add variable</string>
+    <string name="environment_edit">Change variable</string>
+    <string name="environment_save">Save</string>
+    <string name="environment_remove">Remove</string>
+    <string name="environment_name_label">Name</string>
+    <string name="environment_value_label">Value</string>
+    <string name="environment_error_invalid_name">“%1$s” is not a valid name: use letters, digits and underscores, and do not start with a digit.</string>
+    <string name="environment_error_reserved_name">“%1$s” is set by the terminal and cannot be changed.</string>
+    <string name="environment_error_invalid_value">The value of “%1$s” is too long or contains an invalid character.</string>
+    <string name="environment_error_storage">The variables could not be read or saved.</string>
+</resources>

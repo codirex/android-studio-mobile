@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="environment_title">متغيرات البيئة</string>
+    <string name="environment_intro">متغيرات تُضبط في كل جلسة طرفية. التغيير يسري على الجلسات التي تفتحها بعده.</string>
+    <string name="environment_empty">لا توجد متغيرات بعد.</string>
+    <string name="environment_add">إضافة متغير</string>
+    <string name="environment_edit">تعديل المتغير</string>
+    <string name="environment_save">حفظ</string>
+    <string name="environment_remove">حذف</string>
+    <string name="environment_name_label">الاسم</string>
+    <string name="environment_value_label">القيمة</string>
+    <string name="environment_error_invalid_name">«%1$s» اسم غير صالح: استخدم حروفاً وأرقاماً وشرطة سفلية، ولا تبدأ برقم.</string>
+    <string name="environment_error_reserved_name">«%1$s» تضبطه الطرفية ولا يمكن تغييره.</string>
+    <string name="environment_error_invalid_value">قيمة «%1$s» طويلة جداً أو فيها رمز غير صالح.</string>
+    <string name="environment_error_storage">تعذّرت قراءة المتغيرات أو حفظها.</string>
+</resources>
