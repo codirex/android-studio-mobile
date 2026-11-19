@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sdk_title">Android SDK</string>
+    <string name="sdk_intro">Platforms and build tools for building Android apps. Packages are downloaded from Google and checked before they are installed.</string>
+    <string name="sdk_empty">No packages were found.</string>
+    <string name="sdk_item_detail">Revision %1$s · %2$s</string>
+    <string name="sdk_status_available">Install</string>
+    <string name="sdk_status_installed">Installed</string>
+    <string name="sdk_status_update">Update</string>
+    <string name="sdk_busy">Working on %1$s…</string>
+    <string name="sdk_install">Install</string>
+    <string name="sdk_accept_install">Accept and install</string>
+    <string name="sdk_update">Update</string>
+    <string name="sdk_remove">Remove</string>
+    <string name="sdk_confirm_install">Download and install? The download is about %1$s.</string>
+    <string name="sdk_installed_revision">Installed revision: %1$s</string>
+    <string name="sdk_error_network">The download failed. Check the connection and try again.</string>
+    <string name="sdk_error_catalog">The package list from Google could not be read.</string>
+    <string name="sdk_error_not_offered">This package cannot be installed here.</string>
+    <string name="sdk_error_license">The license must be accepted first.</string>
+    <string name="sdk_error_checksum">The downloaded file is not the one Google published, so it was discarded.</string>
+    <string name="sdk_error_cancelled">Cancelled.</string>
+    <string name="sdk_error_storage">The files could not be saved or removed. Check the free space.</string>
+    <string name="sdk_error_unknown">Something went wrong.</string>
+</resources>

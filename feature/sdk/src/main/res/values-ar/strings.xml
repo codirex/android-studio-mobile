@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sdk_title">Android SDK</string>
+    <string name="sdk_intro">منصات وأدوات البناء اللازمة لبناء تطبيقات أندرويد. تُنزَّل الحزم من جوجل ويُتحقق منها قبل تثبيتها.</string>
+    <string name="sdk_empty">لم يتم العثور على حزم.</string>
+    <string name="sdk_item_detail">الإصدار %1$s · %2$s</string>
+    <string name="sdk_status_available">تثبيت</string>
+    <string name="sdk_status_installed">مثبّتة</string>
+    <string name="sdk_status_update">تحديث</string>
+    <string name="sdk_busy">جارٍ العمل على %1$s…</string>
+    <string name="sdk_install">تثبيت</string>
+    <string name="sdk_accept_install">موافقة وتثبيت</string>
+    <string name="sdk_update">تحديث</string>
+    <string name="sdk_remove">إزالة</string>
+    <string name="sdk_confirm_install">تنزيل وتثبيت؟ حجم التنزيل نحو %1$s.</string>
+    <string name="sdk_installed_revision">الإصدار المثبّت: %1$s</string>
+    <string name="sdk_error_network">فشل التنزيل. تحقق من الاتصال وحاول مرة أخرى.</string>
+    <string name="sdk_error_catalog">تعذّرت قراءة قائمة الحزم من جوجل.</string>
+    <string name="sdk_error_not_offered">لا يمكن تثبيت هذه الحزمة هنا.</string>
+    <string name="sdk_error_license">يجب قبول الترخيص أولًا.</string>
+    <string name="sdk_error_checksum">الملف الذي نُزِّل ليس الملف الذي نشرته جوجل، فتم تجاهله.</string>
+    <string name="sdk_error_cancelled">تم الإلغاء.</string>
+    <string name="sdk_error_storage">تعذّر حفظ الملفات أو حذفها. تحقق من المساحة الفارغة.</string>
+    <string name="sdk_error_unknown">حدث خطأ ما.</string>
+</resources>
