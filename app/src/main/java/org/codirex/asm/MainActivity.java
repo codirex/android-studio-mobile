@@ -20,6 +20,7 @@ import org.codirex.asm.feature.project.ProjectListFragment;
 import org.codirex.asm.feature.project.ProjectNavigator;
 import org.codirex.asm.feature.project.TemplateEditFragment;
 import org.codirex.asm.feature.project.TemplateListFragment;
+import org.codirex.asm.feature.sdk.SdkFragment;
 import org.codirex.asm.feature.terminal.TerminalFragment;
 import org.codirex.asm.feature.environment.EnvironmentFragment;
 import org.codirex.asm.feature.toolchain.ToolchainFragment;
@@ -81,6 +82,11 @@ public final class MainActivity extends AppCompatActivity
       Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
       toolchain.setVisible(current instanceof ProjectListFragment);
     }
+    MenuItem sdk = menu.findItem(R.id.action_sdk);
+    if (sdk != null) {
+      Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
+      sdk.setVisible(current instanceof ProjectListFragment);
+    }
     MenuItem environment = menu.findItem(R.id.action_environment);
     if (environment != null) {
       Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
@@ -105,6 +111,10 @@ public final class MainActivity extends AppCompatActivity
     }
     if (item.getItemId() == R.id.action_toolchain) {
       showToolchain();
+      return true;
+    }
+    if (item.getItemId() == R.id.action_sdk) {
+      showSdk();
       return true;
     }
     if (item.getItemId() == R.id.action_environment) {
@@ -172,6 +182,14 @@ public final class MainActivity extends AppCompatActivity
     getSupportFragmentManager()
         .beginTransaction()
         .replace(R.id.container, new EnvironmentFragment())
+        .addToBackStack(null)
+        .commit();
+  }
+
+  private void showSdk() {
+    getSupportFragmentManager()
+        .beginTransaction()
+        .replace(R.id.container, new SdkFragment())
         .addToBackStack(null)
         .commit();
   }

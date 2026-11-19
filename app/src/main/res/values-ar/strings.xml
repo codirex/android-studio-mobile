@@ -3,6 +3,7 @@
     <string name="action_terminal">الطرفية</string>
     <string name="action_templates">القوالب</string>
     <string name="action_toolchain">أدوات التطوير</string>
+    <string name="action_sdk">Android SDK</string>
     <string name="action_environment">متغيرات البيئة</string>
     <string name="action_gradle">تشغيل مهمة Gradle</string>
     <string name="gradle_title">مهمة Gradle</string>

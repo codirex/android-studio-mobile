@@ -35,6 +35,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0027](0027-toolchain-jdk.md) | The toolchain: JDK management | Proposed |
 | [0028](0028-environment-variables.md) | Custom environment variables of the terminal | Proposed |
 | [0029](0029-gradle-tasks.md) | Running Gradle tasks from the IDE | Proposed |
+| [0030](0030-android-sdk-manager.md) | The Android SDK manager | Proposed |
 
 ## Template
 

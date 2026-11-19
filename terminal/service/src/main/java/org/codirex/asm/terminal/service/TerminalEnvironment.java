@@ -32,11 +32,13 @@ final class TerminalEnvironment {
   private final File prefix;
   private final File home;
   private final File environmentFile;
+  private final File sdkRoot;
 
   TerminalEnvironment(File filesDirectory) {
     this.prefix = BootstrapInstaller.prefixOf(filesDirectory);
     this.home = BootstrapInstaller.homeOf(filesDirectory);
     this.environmentFile = new File(filesDirectory, "environment.properties");
+    this.sdkRoot = new File(filesDirectory, "sdk");
   }
 
   File home() {
@@ -77,6 +79,15 @@ final class TerminalEnvironment {
     File javaHome = javaHome();
     if (javaHome != null) {
       env.put("JAVA_HOME", javaHome.getPath());
+    }
+    // The SDK of the SDK manager (ADR-0030). Gradle and the Android plugin look for it here.
+    env.put("ANDROID_HOME", sdkRoot.getPath());
+    env.put("ANDROID_SDK_ROOT", sdkRoot.getPath());
+    // The aapt2 of Google is built for x86-64 and cannot run here; the one of the userland can.
+    // Gradle turns an ORG_GRADLE_PROJECT_ variable into a project property.
+    File aapt2 = new File(prefix, "bin/aapt2");
+    if (aapt2.isFile()) {
+      env.put("ORG_GRADLE_PROJECT_android.aapt2FromMavenOverride", aapt2.getPath());
     }
     // The person's own variables come last, so they can change what is set above (ADR-0028).
     env.putAll(customVariables());
