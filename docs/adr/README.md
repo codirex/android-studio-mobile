@@ -36,6 +36,7 @@ Status is one of: Proposed, Accepted, Superseded by ADR-NNNN.
 | [0028](0028-environment-variables.md) | Custom environment variables of the terminal | Proposed |
 | [0029](0029-gradle-tasks.md) | Running Gradle tasks from the IDE | Proposed |
 | [0030](0030-android-sdk-manager.md) | The Android SDK manager | Proposed |
+| [0031](0031-java-language-server.md) | Java language server in the userland | Proposed |
 
 ## Template
 
