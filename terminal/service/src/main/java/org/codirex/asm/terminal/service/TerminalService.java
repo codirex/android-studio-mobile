@@ -44,7 +44,9 @@ public final class TerminalService extends Service {
     sessions = new SessionManager(new PtyLauncher(getFilesDir()), SessionManager.DEFAULT_BUFFER);
     UserlandSetup setup = UserlandSetup.create(getFilesDir(), getCacheDir(), Build.SUPPORTED_ABIS);
     // With no sessions left the service stops, unless the UI is bound and may open a new one.
-    binder = new TerminalBinder(sessions, setup, this::stopWhenUnused);
+    binder =
+        new TerminalBinder(
+            sessions, setup, new LanguageServerLauncher(getFilesDir()), this::stopWhenUnused);
   }
 
   @Override

@@ -1,5 +1,6 @@
 package org.codirex.asm.terminal.protocol;
 
+import android.os.ParcelFileDescriptor;
 import org.codirex.asm.terminal.protocol.IInstallListener;
 import org.codirex.asm.terminal.protocol.ITerminalListener;
 
@@ -46,4 +47,13 @@ interface ITerminalService {
 
     /** Ends the session if it runs and forgets it. */
     void closeSession(int session);
+
+    /**
+     * Starts the language server of {@code language} ("java") for the workspace named by
+     * {@code workspaceKey} (letters, digits, dot, dash, underscore) and returns a socket: the
+     * protocol of the server in both directions, with the server's standard input and output
+     * behind it (ADR-0031). Closing it stops the server. Throws IllegalStateException with the
+     * reason if the server cannot start, for example because it is not installed.
+     */
+    ParcelFileDescriptor openLanguageServer(String language, String workspaceKey);
 }

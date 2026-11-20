@@ -1,6 +1,7 @@
 package org.codirex.asm.terminal.service;
 
 import android.os.IBinder;
+import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import java.io.IOException;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ final class TerminalBinder extends ITerminalService.Stub {
 
   private final SessionManager sessions;
   private final UserlandSetup setup;
+  private final LanguageServerLauncher servers;
   private final Runnable onIdle;
 
   /** The listeners of the UI process, by session and Binder, so that detach finds them. */
@@ -25,9 +27,14 @@ final class TerminalBinder extends ITerminalService.Stub {
   /**
    * @param onIdle called when the last session was closed; the service then may stop
    */
-  TerminalBinder(SessionManager sessions, UserlandSetup setup, Runnable onIdle) {
+  TerminalBinder(
+      SessionManager sessions,
+      UserlandSetup setup,
+      LanguageServerLauncher servers,
+      Runnable onIdle) {
     this.sessions = sessions;
     this.setup = setup;
+    this.servers = servers;
     this.onIdle = onIdle;
   }
 
@@ -53,6 +60,23 @@ final class TerminalBinder extends ITerminalService.Stub {
     }
     try {
       return sessions.open(directory, rows, columns);
+    } catch (IOException e) {
+      throw new IllegalStateException(e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public ParcelFileDescriptor openLanguageServer(String language, String workspaceKey) {
+    try {
+      Process process = servers.start(language, workspaceKey);
+      ParcelFileDescriptor[] pair = ParcelFileDescriptor.createSocketPair();
+      ParcelFileDescriptor local = pair[0];
+      StdioBridge.start(
+          new ParcelFileDescriptor.AutoCloseInputStream(local),
+          new ParcelFileDescriptor.AutoCloseOutputStream(local),
+          local,
+          process);
+      return pair[1];
     } catch (IOException e) {
       throw new IllegalStateException(e.getMessage(), e);
     }
