@@ -15,11 +15,14 @@ import java.util.Objects;
  */
 public final class Toolchain {
 
-  /** JDK 17: the one the userland builds today (ADR-0027). */
+  /** JDK 17: the one Gradle builds run on (ADR-0027). */
   public static final JdkOffer JDK_17 = new JdkOffer(17, "openjdk-17", "lib/jvm/java-17-openjdk");
 
+  /** JDK 21: the Java language server needs it to run (ADR-0031). */
+  public static final JdkOffer JDK_21 = new JdkOffer(21, "openjdk-21", "lib/jvm/java-21-openjdk");
+
   private static final List<JdkOffer> OFFERS =
-      Collections.unmodifiableList(Arrays.asList(JDK_17));
+      Collections.unmodifiableList(Arrays.asList(JDK_21, JDK_17));
 
   private final JdkLocator locator;
 

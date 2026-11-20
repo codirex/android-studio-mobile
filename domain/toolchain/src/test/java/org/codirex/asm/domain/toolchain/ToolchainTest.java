@@ -14,8 +14,9 @@ public final class ToolchainTest {
   public void aJdkThatIsNotInstalledIsReportedAsSuch() {
     Toolchain toolchain = new Toolchain(offer -> null);
     List<JdkStatus> jdks = toolchain.jdks();
-    assertEquals(1, jdks.size());
-    assertEquals(Toolchain.JDK_17, jdks.get(0).offer());
+    assertEquals(2, jdks.size());
+    assertEquals(Toolchain.JDK_21, jdks.get(0).offer());
+    assertEquals(Toolchain.JDK_17, jdks.get(1).offer());
     assertFalse(jdks.get(0).isInstalled());
     assertNull(jdks.get(0).installed());
   }
@@ -37,6 +38,7 @@ public final class ToolchainTest {
       assertTrue(offers.get(i - 1).majorVersion() > offers.get(i).majorVersion());
     }
     assertEquals("openjdk-17", Toolchain.JDK_17.packageName());
+    assertEquals("openjdk-21", Toolchain.JDK_21.packageName());
   }
 
   @Test(expected = IllegalArgumentException.class)
