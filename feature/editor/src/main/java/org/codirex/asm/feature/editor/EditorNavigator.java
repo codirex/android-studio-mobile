@@ -8,4 +8,10 @@ public interface EditorNavigator {
 
   /** The user asked to see the project's files. */
   void showFileTree();
+
+  /**
+   * The user asked to install a package of the userland (the Java language server, ADR-0031). The
+   * host runs the package manager where the person can see it.
+   */
+  void installPackage(String packageName);
 }

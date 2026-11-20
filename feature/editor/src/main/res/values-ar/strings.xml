@@ -10,4 +10,7 @@
     <string name="editor_error_not_text">هذا الملف ليس ملفًا نصيًا.</string>
     <string name="editor_error_too_large">حجم هذا الملف أكبر من 2 ميجابايت ولا يمكن فتحه في المحرر.</string>
     <string name="editor_error_storage">تعذرت قراءة الملف أو حفظه. تحقق من التخزين وحاول مرة أخرى.</string>
+
+    <string name="editor_java_server_missing">خادم لغة جافا غير مثبّت. يوفّر الإكمال التلقائي وعلامات الأخطاء لجافا.</string>
+    <string name="editor_java_server_install">تثبيت</string>
 </resources>

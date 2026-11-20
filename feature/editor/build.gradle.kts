@@ -12,9 +12,12 @@ dependencies {
     // EditorFragment mentions ProjectName; Hilt-generated code in the app mentions the port.
     api(project(":domain:project"))
     api(project(":domain:editor"))
+    implementation(project(":domain:lsp"))
 
     implementation(project(":core:concurrency"))
     implementation(project(":core:ui"))
+    // The terminal service runs the language server (ADR-0031, ADR-0025).
+    implementation(project(":terminal:view"))
 
     implementation(libs.sora.editor)
     implementation(libs.sora.language.textmate)
