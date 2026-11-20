@@ -15,15 +15,21 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 import dagger.hilt.android.AndroidEntryPoint;
 import io.github.rosemoe.sora.event.ContentChangeEvent;
+import io.github.rosemoe.sora.lang.diagnostic.DiagnosticProvider;
+import io.github.rosemoe.sora.lang.diagnostic.DiagnosticRegion;
+import io.github.rosemoe.sora.lang.diagnostic.DiagnosticsContainer;
 import io.github.rosemoe.sora.lang.Language;
 import io.github.rosemoe.sora.langs.textmate.TextMateColorScheme;
 import io.github.rosemoe.sora.langs.textmate.registry.ThemeRegistry;
 import io.github.rosemoe.sora.widget.schemes.SchemeDarcula;
 import io.github.rosemoe.sora.widget.schemes.SchemeGitHub;
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.codirex.asm.domain.editor.SourceLanguage;
+import org.codirex.asm.domain.lsp.Diagnostic;
 import org.codirex.asm.domain.project.ProjectName;
 import org.codirex.asm.feature.editor.databinding.FragmentEditorBinding;
 import org.codirex.asm.feature.editor.databinding.ItemEditorTabBinding;
@@ -37,6 +43,7 @@ import org.codirex.asm.feature.editor.databinding.ItemEditorTabBinding;
 public final class EditorFragment extends Fragment {
 
   private static final long AUTO_SAVE_DELAY_MS = 1000;
+  private static final long SERVER_SYNC_DELAY_MS = 400;
 
   private final Handler handler = new Handler(Looper.getMainLooper());
   private final Runnable autoSave = this::snapshotCurrent;
@@ -45,7 +52,20 @@ public final class EditorFragment extends Fragment {
   private FragmentEditorBinding binding;
 
   /** The document whose text the editor widget holds, or null. */
-  private String currentPath;
+  private volatile String currentPath;
+
+  /** The Java language server of the project (ADR-0031), or null before the view exists. */
+  private JavaLanguageServer javaServer;
+
+  private File projectDirectory;
+  private boolean installOffered;
+
+  /** The diagnostics of the shown document, as the server last said (main thread only). */
+  private List<Diagnostic> diagnostics = Collections.emptyList();
+
+  private String diagnosticsUri;
+  private final Runnable syncServer = this::syncServerNow;
+  private final DiagnosticProvider diagnosticProvider = this::provideDiagnostics;
 
   private int appliedRevision = -1;
   private SourceLanguage appliedLanguage = SourceLanguage.PLAIN;
@@ -111,6 +131,30 @@ public final class EditorFragment extends Fragment {
   @Override
   public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
     viewModel = new ViewModelProvider(this).get(EditorViewModel.class);
+    projectDirectory =
+        new File(requireContext().getFilesDir(), "projects/" + requireArguments().getString(EditorViewModel.ARG_PROJECT));
+    LanguageServerHolder holder = new ViewModelProvider(this).get(LanguageServerHolder.class);
+    if (holder.java() == null) {
+      holder.setJava(
+          new JavaLanguageServer(
+              requireContext(),
+              projectDirectory,
+              workspaceKey(requireArguments().getString(EditorViewModel.ARG_PROJECT))));
+    }
+    javaServer = holder.java();
+    // The server outlives the view; its reports go to the view that is there now.
+    javaServer.setListener(
+        new JavaLanguageServer.Listener() {
+          @Override
+          public void onState(JavaLanguageServer.State state) {
+            handler.post(() -> onServerState(state));
+          }
+
+          @Override
+          public void onDiagnostics(String uri, List<Diagnostic> found) {
+            handler.post(() -> onServerDiagnostics(uri, found));
+          }
+        });
 
     // A new view starts empty, whatever the previous one showed. A new editor widget has no
     // language, which behaves as plain text.
@@ -132,6 +176,7 @@ public final class EditorFragment extends Fragment {
       binding.editor.setColorScheme(night ? new SchemeDarcula() : new SchemeGitHub());
     }
     binding.editor.subscribeAlways(ContentChangeEvent.class, this::onContentChanged);
+    binding.editor.registerDiagnosticProvider(diagnosticProvider);
 
     binding.showFiles.setOnClickListener(
         v -> ((EditorNavigator) requireActivity()).showFileTree());
@@ -165,6 +210,11 @@ public final class EditorFragment extends Fragment {
   @Override
   public void onDestroyView() {
     handler.removeCallbacks(autoSave);
+    handler.removeCallbacks(syncServer);
+    if (javaServer != null) {
+      javaServer.setListener(null);
+    }
+    binding.editor.unregisterDiagnosticProvider(diagnosticProvider);
     binding.editor.release();
     binding = null;
     super.onDestroyView();
@@ -178,6 +228,88 @@ public final class EditorFragment extends Fragment {
     viewModel.onEdited(currentPath);
     handler.removeCallbacks(autoSave);
     handler.postDelayed(autoSave, AUTO_SAVE_DELAY_MS);
+    if (isJava(currentPath)) {
+      handler.removeCallbacks(syncServer);
+      handler.postDelayed(syncServer, SERVER_SYNC_DELAY_MS);
+    }
+  }
+
+  private static boolean isJava(@Nullable String path) {
+    return path != null && SourceLanguage.forPath(path) == SourceLanguage.JAVA;
+  }
+
+  private String uriOf(String relativePath) {
+    return JavaLanguageServer.uriOf(new File(projectDirectory, relativePath));
+  }
+
+  /** A name for the workspace data of jdt.ls: letters, digits, dot, dash and underscore. */
+  private static String workspaceKey(String project) {
+    return project.replaceAll("[^A-Za-z0-9._-]", "_");
+  }
+
+  /** Sends the live text of the shown Java file to the server (a moment after the last edit). */
+  private void syncServerNow() {
+    String path = currentPath;
+    if (binding != null && javaServer != null && isJava(path)) {
+      javaServer.documentChanged(uriOf(path), binding.editor.getText().toString());
+    }
+  }
+
+  private void onServerState(JavaLanguageServer.State state) {
+    if (binding == null) {
+      return;
+    }
+    if (state == JavaLanguageServer.State.MISSING && !installOffered) {
+      installOffered = true;
+      Snackbar.make(binding.getRoot(), R.string.editor_java_server_missing, Snackbar.LENGTH_INDEFINITE)
+          .setAction(
+              R.string.editor_java_server_install,
+              v -> ((EditorNavigator) requireActivity()).installPackage("jdtls"))
+          .show();
+    }
+    if (state == JavaLanguageServer.State.READY) {
+      syncServerNow();
+    }
+  }
+
+  private void onServerDiagnostics(String uri, List<Diagnostic> found) {
+    if (binding == null || currentPath == null || !uri.equals(uriOf(currentPath))) {
+      return;
+    }
+    diagnosticsUri = uri;
+    diagnostics = found;
+    binding.editor.invalidateDiagnostics();
+  }
+
+  /** Gives the editor the squiggles for the diagnostics of the shown file. */
+  private void provideDiagnostics(DiagnosticsContainer container) {
+    if (binding == null || diagnostics.isEmpty() || currentPath == null) {
+      return;
+    }
+    if (!uriOf(currentPath).equals(diagnosticsUri)) {
+      return;
+    }
+    io.github.rosemoe.sora.text.Content text = binding.editor.getText();
+    List<DiagnosticRegion> regions = new ArrayList<>();
+    for (Diagnostic d : diagnostics) {
+      if (d.startLine() >= text.getLineCount()) {
+        continue;
+      }
+      int endLine = Math.min(d.endLine(), text.getLineCount() - 1);
+      int start = text.getCharIndex(d.startLine(), Math.min(d.startCharacter(), text.getColumnCount(d.startLine())));
+      int end = text.getCharIndex(endLine, Math.min(d.endCharacter(), text.getColumnCount(endLine)));
+      if (end <= start) {
+        end = Math.min(start + 1, text.length());
+      }
+      short severity =
+          d.severity() == Diagnostic.ERROR
+              ? DiagnosticRegion.SEVERITY_ERROR
+              : d.severity() == Diagnostic.WARNING
+                  ? DiagnosticRegion.SEVERITY_WARNING
+                  : DiagnosticRegion.SEVERITY_TYPO;
+      regions.add(new DiagnosticRegion(start, end, severity));
+    }
+    container.addDiagnostics(regions);
   }
 
   /** Hands the live text of the shown document to the view model, which saves it if changed. */
@@ -210,6 +342,12 @@ public final class EditorFragment extends Fragment {
     if (state.revision() != appliedRevision) {
       appliedRevision = state.revision();
       binding.editor.setText(state.shownText());
+      diagnostics = Collections.emptyList();
+      binding.editor.invalidateDiagnostics();
+      if (isJava(state.shownPath()) && javaServer != null) {
+        javaServer.start();
+        javaServer.documentChanged(uriOf(state.shownPath()), state.shownText().toString());
+      }
     }
     // A rename changes the shown path without changing the text, so follow it here.
     currentPath = state.shownPath();
@@ -225,10 +363,26 @@ public final class EditorFragment extends Fragment {
     }
   }
 
-  /** The Sora language for a source language; null makes the editor show plain text. */
+  /**
+   * The Sora language for a source language; null makes the editor show plain text. Java gets its
+   * completion from the language server when that is ready (ADR-0031).
+   */
   @Nullable
-  private static Language languageFor(SourceLanguage language) {
-    return TextMateSetup.languageFor(language);
+  private Language languageFor(SourceLanguage language) {
+    Language base = TextMateSetup.languageFor(language);
+    if (base == null || language != SourceLanguage.JAVA) {
+      return base;
+    }
+    return new ServerLanguage(
+        base,
+        (text, line, column) -> {
+          String path = currentPath;
+          JavaLanguageServer server = javaServer;
+          if (path == null || server == null || !isJava(path)) {
+            return null;
+          }
+          return server.complete(uriOf(path), text, line, column);
+        });
   }
 
   private void renderTabs(EditorState state) {
