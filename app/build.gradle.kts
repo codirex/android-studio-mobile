@@ -10,7 +10,8 @@ android {
 
     defaultConfig {
         applicationId = "org.codirex.asm"
-        versionCode = 1
+        // CI builds count up, so a build can always replace the one before it.
+        versionCode = providers.environmentVariable("GITHUB_RUN_NUMBER").map { it.toInt() }.orElse(1).get()
         versionName = "0.0.1"
     }
 }

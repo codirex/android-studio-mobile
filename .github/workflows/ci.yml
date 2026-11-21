@@ -48,6 +48,29 @@ jobs:
         with:
           gradle-version: "9.5.0"
 
+      # Debug builds are signed with our own key when its secrets exist, so every build installs
+      # over the previous one. Without the secrets (a pull request from a fork) the default debug
+      # key is used and the build still works. The key password defaults to the store password.
+      - name: Debug signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ASM_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ASM_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ASM_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ASM_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ]; then
+            echo "No signing secrets: the default debug key is used."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/asm.jks"
+          {
+            echo "ASM_KEYSTORE_FILE=$RUNNER_TEMP/asm.jks"
+            echo "ASM_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "ASM_KEY_ALIAS=$KEY_ALIAS"
+            [ -z "$KEY_PASSWORD" ] || echo "ASM_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+          echo "Debug APK will be signed with the project key."
+
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
 
