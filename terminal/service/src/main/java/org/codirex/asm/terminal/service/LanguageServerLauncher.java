@@ -1,7 +1,12 @@
 package org.codirex.asm.terminal.service;
 
+import android.util.Log;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +16,8 @@ import java.util.Map;
  * only the servers listed here can be run.
  */
 final class LanguageServerLauncher {
+
+  private static final String TAG = "LanguageServer";
 
   private final TerminalEnvironment environment;
   private final File prefix;
@@ -40,7 +47,10 @@ final class LanguageServerLauncher {
     return command;
   }
 
-  /** Starts the server with the environment of the terminal, standard error going to a log. */
+  /**
+   * Starts the server with the environment of the terminal. What it writes to standard error goes
+   * to {@code ~/.cache/jdtls/server.log} and to logcat, with the exit code when it ends.
+   */
   Process start(String language, String workspaceKey) throws IOException {
     List<String> command = command(language, workspaceKey);
     if (command == null) {
@@ -56,8 +66,39 @@ final class LanguageServerLauncher {
     env.clear();
     env.putAll(environment.variables());
     builder.directory(home);
-    builder.redirectError(ProcessBuilder.Redirect.appendTo(new File(logs, "server.log")));
-    return builder.start();
+    Log.i(TAG, "starting " + command);
+    Process process = builder.start();
+    watchErrors(process, new File(logs, "server.log"));
+    return process;
+  }
+
+  private static void watchErrors(Process process, File log) {
+    Thread thread =
+        new Thread(
+            () -> {
+              try (BufferedReader reader =
+                      new BufferedReader(
+                          new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
+                  FileWriter writer = new FileWriter(log, true)) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                  Log.w(TAG, line);
+                  writer.write(line);
+                  writer.write('\n');
+                  writer.flush();
+                }
+              } catch (IOException ignored) {
+                // The stream or the log is gone; the exit code below still says how it ended.
+              }
+              try {
+                Log.w(TAG, "the language server ended with code " + process.waitFor());
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+            },
+            "lsp-stderr");
+    thread.setDaemon(true);
+    thread.start();
   }
 
   /** A short name made of letters, digits, dot, dash and underscore. */
