@@ -1,6 +1,8 @@
 plugins {
     id("asm.android.application")
     alias(libs.plugins.hilt)
+    // Adds the Codirex Trace SDK to debug builds: logs stream live to the Trace viewer app.
+    id("org.codirex.trace") version "1.0.0"
 }
 
 android {
