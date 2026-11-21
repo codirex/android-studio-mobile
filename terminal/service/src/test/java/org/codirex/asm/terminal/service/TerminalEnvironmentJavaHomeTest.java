@@ -40,10 +40,20 @@ public final class TerminalEnvironmentJavaHomeTest {
   }
 
   @Test
-  public void theNewestJdkWins() throws Exception {
+  public void theGradleJdkWinsOverNewerOnes() throws Exception {
     File files = tmp.newFolder("f");
-    jdk(files, "java-17-openjdk", true);
-    File newest = jdk(files, "java-21-openjdk", true);
+    File gradleJdk = jdk(files, "java-17-openjdk", true);
+    jdk(files, "java-21-openjdk", true);
+    jdk(files, "java-25-openjdk", true);
+    jdk(files, "java-8-openjdk", true);
+    assertEquals(gradleJdk, new TerminalEnvironment(files).javaHome());
+  }
+
+  @Test
+  public void withoutTheGradleJdkTheNewestWins() throws Exception {
+    File files = tmp.newFolder("f");
+    jdk(files, "java-21-openjdk", true);
+    File newest = jdk(files, "java-25-openjdk", true);
     jdk(files, "java-8-openjdk", true);
     assertEquals(newest, new TerminalEnvironment(files).javaHome());
   }
@@ -51,8 +61,8 @@ public final class TerminalEnvironmentJavaHomeTest {
   @Test
   public void aFolderWithoutTheLauncherIsNotAJdk() throws Exception {
     File files = tmp.newFolder("f");
-    File real = jdk(files, "java-17-openjdk", true);
-    jdk(files, "java-21-openjdk", false);
+    File real = jdk(files, "java-21-openjdk", true);
+    jdk(files, "java-25-openjdk", false);
     assertEquals(real, new TerminalEnvironment(files).javaHome());
   }
 

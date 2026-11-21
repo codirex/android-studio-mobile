@@ -29,6 +29,9 @@ final class TerminalEnvironment {
   private static final List<String> RESERVED =
       Arrays.asList("HOME", "PREFIX", "SHELL", "LD_PRELOAD");
 
+  /** The JDK Gradle builds run on (ADR-0027); it is the JAVA_HOME whenever it is installed. */
+  private static final int GRADLE_JDK = 17;
+
   private final File prefix;
   private final File home;
   private final File environmentFile;
@@ -136,8 +139,10 @@ final class TerminalEnvironment {
   }
 
   /**
-   * The newest JDK of the userland: a folder {@code lib/jvm/java-NN-...} with a {@code bin/java}.
-   * {@code null} while no JDK is installed (ADR-0027).
+   * The JDK of the shell: the Gradle JDK (17) when it is installed, so that installing a newer JDK
+   * (the language server needs 25) does not move Gradle builds to it; otherwise the newest JDK of
+   * the userland. A JDK is a folder {@code lib/jvm/java-NN-...} with a {@code bin/java}. {@code
+   * null} while no JDK is installed (ADR-0027).
    */
   File javaHome() {
     File[] folders = new File(prefix, "lib/jvm").listFiles();
@@ -148,7 +153,13 @@ final class TerminalEnvironment {
     int bestVersion = -1;
     for (File folder : folders) {
       int version = majorVersionOf(folder.getName());
-      if (version > bestVersion && new File(folder, "bin/java").isFile()) {
+      if (!new File(folder, "bin/java").isFile()) {
+        continue;
+      }
+      if (version == GRADLE_JDK) {
+        return folder;
+      }
+      if (version > bestVersion) {
         best = folder;
         bestVersion = version;
       }
