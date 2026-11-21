@@ -392,6 +392,13 @@ public final class EditorFragment extends Fragment {
       selectTab(paths.indexOf(active));
       return;
     }
+    if (javaServer != null) {
+      for (String old : renderedPaths) {
+        if (!paths.contains(old) && isJava(old)) {
+          javaServer.documentClosed(uriOf(old));
+        }
+      }
+    }
     renderedPaths = paths;
     renderedDirty = state.dirty();
 
