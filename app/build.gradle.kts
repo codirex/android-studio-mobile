@@ -36,6 +36,7 @@ dependencies {
     implementation(project(":data:environment"))
     implementation(project(":data:toolchain"))
     implementation(project(":data:sdk"))
+    implementation(project(":feature:build"))
     implementation(project(":feature:editor"))
     implementation(project(":feature:filetree"))
     implementation(project(":feature:project"))
