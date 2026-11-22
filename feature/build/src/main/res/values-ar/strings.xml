@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="build_starting">جارٍ بدء البناء…</string>
+    <string name="build_running">يعمل %1$s</string>
+    <string name="build_successful">نجح البناء %1$s</string>
+    <string name="build_failed">فشل البناء %1$s</string>
+    <string name="build_stopped">تم إيقاف البناء</string>
+    <string name="build_could_not_start">تعذّر بدء البناء: %1$s</string>
+    <string name="build_summary">%1$d مهمة · %2$d أخطاء · %3$d تحذيرات</string>
+    <string name="build_stop">إيقاف</string>
+</resources>

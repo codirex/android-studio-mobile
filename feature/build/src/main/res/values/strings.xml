@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="build_starting">Starting the build…</string>
+    <string name="build_running">Running %1$s</string>
+    <string name="build_successful">Build successful %1$s</string>
+    <string name="build_failed">Build failed %1$s</string>
+    <string name="build_stopped">The build was stopped</string>
+    <string name="build_could_not_start">The build could not start: %1$s</string>
+    <string name="build_summary">%1$d tasks · %2$d errors · %3$d warnings</string>
+    <string name="build_stop">Stop</string>
+</resources>
