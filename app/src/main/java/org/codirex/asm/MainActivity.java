@@ -13,6 +13,8 @@ import java.util.List;
 import org.codirex.asm.databinding.ActivityMainBinding;
 import org.codirex.asm.domain.project.ProjectName;
 import org.codirex.asm.domain.toolchain.GradleTask;
+import org.codirex.asm.feature.build.BuildFragment;
+import org.codirex.asm.feature.build.BuildNavigator;
 import org.codirex.asm.feature.editor.EditorNavigator;
 import org.codirex.asm.feature.filetree.FileTreeNavigator;
 import org.codirex.asm.feature.project.CreateProjectFragment;
@@ -32,7 +34,11 @@ import org.codirex.asm.feature.toolchain.ToolchainNavigator;
  */
 @AndroidEntryPoint
 public final class MainActivity extends AppCompatActivity
-    implements ProjectNavigator, FileTreeNavigator, EditorNavigator, ToolchainNavigator {
+    implements ProjectNavigator,
+        FileTreeNavigator,
+        EditorNavigator,
+        ToolchainNavigator,
+        BuildNavigator {
 
   private ActivityMainBinding binding;
 
@@ -266,8 +272,8 @@ public final class MainActivity extends AppCompatActivity
   }
 
   /**
-   * Offers the common Gradle tasks of the open project and runs the chosen one in a terminal, so
-   * the person sees the build output (ADR-0029).
+   * Offers the common Gradle tasks of the open project and runs the chosen one on the build screen,
+   * which shows the parsed output (ADR-0032).
    */
   private void showGradleTasks() {
     if (workspace() == null) {
@@ -290,13 +296,30 @@ public final class MainActivity extends AppCompatActivity
       return;
     }
     File directory = new File(getFilesDir(), "projects/" + workspace.project().value());
-    boolean wrapper = new File(directory, "gradlew").isFile();
     getSupportFragmentManager()
         .beginTransaction()
-        .replace(
-            R.id.container, TerminalFragment.newInstance(directory.getPath(), task.command(wrapper)))
+        .replace(R.id.container, BuildFragment.newInstance(directory.getPath(), task.name()))
         .addToBackStack(null)
         .commit();
+  }
+
+  /** Goes back from the build screen to the project that owns the file and opens it there. */
+  @Override
+  public void openBuildFile(String absolutePath) {
+    String root = new File(getFilesDir(), "projects").getPath() + "/";
+    if (!absolutePath.startsWith(root)) {
+      return;
+    }
+    String inside = absolutePath.substring(root.length());
+    int slash = inside.indexOf('/');
+    if (slash <= 0 || slash == inside.length() - 1) {
+      return;
+    }
+    getSupportFragmentManager().popBackStackImmediate();
+    WorkspaceFragment workspace = workspace();
+    if (workspace != null && workspace.project().value().equals(inside.substring(0, slash))) {
+      workspace.openFile(inside.substring(slash + 1));
+    }
   }
 
   /** The open project's workspace, or null when another screen is shown. */
