@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="toolchain_title">أدوات التطوير</string>
-    <string name="toolchain_intro">أدوات تطوير جافا على هذا الجهاز. التثبيت يفتح الطرفية ويشغّل مدير الحزم، لتشاهد ما يفعله.</string>
+    <string name="toolchain_intro">أدوات التطوير على هذا الجهاز. التثبيت يفتح الطرفية ويشغّل مدير الحزم، لتشاهد ما يفعله.</string>
     <string name="toolchain_failed">تعذّرت قراءة أدوات التطوير.</string>
     <string name="jdk_name">JDK %1$d</string>
     <string name="jdk_installed">مثبّت · %1$s</string>
     <string name="jdk_installed_version">مثبّت · %1$s · %2$s</string>
     <string name="jdk_not_installed">غير مثبّت</string>
     <string name="jdk_install">تثبيت</string>
+    <string name="aapt2_name">aapt2 (موارد أندرويد)</string>
+    <string name="aapt2_hint">لازم لبناء تطبيقات أندرويد: النسخة المرفقة مع إضافة Gradle لأندرويد لا تعمل على الهاتف.</string>
+    <string name="aapt2_installed">مثبّت · %1$s</string>
 </resources>
