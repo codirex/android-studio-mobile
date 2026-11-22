@@ -23,12 +23,26 @@ public final class LanguageSession {
 
   private final LspClient client;
   private final String rootUri;
+  private final Map<String, Object> initializationOptions;
   private final DiagnosticsListener diagnostics;
   private volatile boolean initialized;
 
   public LanguageSession(
       InputStream in, OutputStream out, String rootUri, DiagnosticsListener diagnostics) {
+    this(in, out, rootUri, null, diagnostics);
+  }
+
+  /**
+   * @param initializationOptions server specific settings sent with {@code initialize}, or null
+   */
+  public LanguageSession(
+      InputStream in,
+      OutputStream out,
+      String rootUri,
+      Map<String, Object> initializationOptions,
+      DiagnosticsListener diagnostics) {
     this.rootUri = rootUri;
+    this.initializationOptions = initializationOptions;
     this.diagnostics = diagnostics;
     this.client = new LspClient(in, out, new Handler());
   }
@@ -73,6 +87,9 @@ public final class LanguageSession {
     params.put("rootUri", rootUri);
     params.put("capabilities", capabilities);
     params.put("workspaceFolders", Collections.singletonList(folder));
+    if (initializationOptions != null) {
+      params.put("initializationOptions", initializationOptions);
+    }
     return client
         .request("initialize", params)
         .thenAccept(
