@@ -56,4 +56,14 @@ interface ITerminalService {
      * reason if the server cannot start, for example because it is not installed.
      */
     ParcelFileDescriptor openLanguageServer(String language, String workspaceKey);
+
+    /**
+     * Runs the Gradle task {@code task} (a task name or path such as ":app:assembleDebug") in the
+     * project folder {@code projectDirectory} and returns a socket that delivers the build's
+     * output, standard output and error together, in plain console form (ADR-0032). The socket
+     * ends when the build does; closing it earlier stops the build. Throws IllegalStateException
+     * with the reason if it cannot start, for example because Gradle is not installed, and
+     * IllegalArgumentException for a task name or folder that is not allowed.
+     */
+    ParcelFileDescriptor runGradle(String projectDirectory, String task);
 }

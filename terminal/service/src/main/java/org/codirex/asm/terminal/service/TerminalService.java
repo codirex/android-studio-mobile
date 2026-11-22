@@ -46,7 +46,11 @@ public final class TerminalService extends Service {
     // With no sessions left the service stops, unless the UI is bound and may open a new one.
     binder =
         new TerminalBinder(
-            sessions, setup, new LanguageServerLauncher(getFilesDir()), this::stopWhenUnused);
+            sessions,
+            setup,
+            new LanguageServerLauncher(getFilesDir()),
+            new GradleLauncher(getFilesDir()),
+            this::stopWhenUnused);
   }
 
   @Override

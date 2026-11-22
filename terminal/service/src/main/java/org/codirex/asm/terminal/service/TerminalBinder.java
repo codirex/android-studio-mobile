@@ -19,6 +19,7 @@ final class TerminalBinder extends ITerminalService.Stub {
   private final SessionManager sessions;
   private final UserlandSetup setup;
   private final LanguageServerLauncher servers;
+  private final GradleLauncher gradle;
   private final Runnable onIdle;
 
   /** The listeners of the UI process, by session and Binder, so that detach finds them. */
@@ -31,10 +32,12 @@ final class TerminalBinder extends ITerminalService.Stub {
       SessionManager sessions,
       UserlandSetup setup,
       LanguageServerLauncher servers,
+      GradleLauncher gradle,
       Runnable onIdle) {
     this.sessions = sessions;
     this.setup = setup;
     this.servers = servers;
+    this.gradle = gradle;
     this.onIdle = onIdle;
   }
 
@@ -69,17 +72,31 @@ final class TerminalBinder extends ITerminalService.Stub {
   public ParcelFileDescriptor openLanguageServer(String language, String workspaceKey) {
     try {
       Process process = servers.start(language, workspaceKey);
-      ParcelFileDescriptor[] pair = ParcelFileDescriptor.createSocketPair();
-      ParcelFileDescriptor local = pair[0];
-      StdioBridge.start(
-          new ParcelFileDescriptor.AutoCloseInputStream(local),
-          new ParcelFileDescriptor.AutoCloseOutputStream(local),
-          local,
-          process);
-      return pair[1];
+      return bridge(process);
     } catch (IOException e) {
       throw new IllegalStateException(e.getMessage(), e);
     }
+  }
+
+  @Override
+  public ParcelFileDescriptor runGradle(String projectDirectory, String task) {
+    try {
+      return bridge(gradle.start(projectDirectory, task));
+    } catch (IOException e) {
+      throw new IllegalStateException(e.getMessage(), e);
+    }
+  }
+
+  /** A socket joined to the standard streams of a process; closing it stops the process. */
+  private static ParcelFileDescriptor bridge(Process process) throws IOException {
+    ParcelFileDescriptor[] pair = ParcelFileDescriptor.createSocketPair();
+    ParcelFileDescriptor local = pair[0];
+    StdioBridge.start(
+        new ParcelFileDescriptor.AutoCloseInputStream(local),
+        new ParcelFileDescriptor.AutoCloseOutputStream(local),
+        local,
+        process);
+    return pair[1];
   }
 
   @Override
