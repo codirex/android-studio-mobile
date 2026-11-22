@@ -54,7 +54,9 @@ public final class BuildFragment extends Fragment {
     requireActivity().setTitle(task);
     adapter =
         new ProblemAdapter(
-            problem -> ((BuildNavigator) requireActivity()).openBuildFile(problem.file()));
+            problem ->
+                ((BuildNavigator) requireActivity())
+                    .openBuildFile(problem.file(), problem.line()));
     binding.problems.setLayoutManager(new LinearLayoutManager(requireContext()));
     binding.problems.setAdapter(adapter);
     binding.stop.setOnClickListener(v -> viewModel.stop());

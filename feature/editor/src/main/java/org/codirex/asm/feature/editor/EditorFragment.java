@@ -74,6 +74,11 @@ public final class EditorFragment extends Fragment {
   private Set<String> renderedDirty = Collections.emptySet();
   private boolean rendering;
 
+  /** A line to put the cursor on once {@link #pendingPath} is shown (1-based), or 0. */
+  private int pendingLine;
+
+  private String pendingPath;
+
   /** Creates the editor for {@code project}. */
   public static EditorFragment newInstance(ProjectName project) {
     Bundle arguments = new Bundle();
@@ -90,6 +95,33 @@ public final class EditorFragment extends Fragment {
     }
     snapshotCurrent();
     viewModel.open(relativePath);
+  }
+
+  /**
+   * Opens a file and puts the cursor on {@code line} (1-based) once its text is shown. A line below
+   * 1 only opens the file.
+   */
+  public void open(String relativePath, int line) {
+    if (viewModel == null) {
+      return;
+    }
+    pendingPath = line > 0 ? relativePath : null;
+    pendingLine = line;
+    open(relativePath);
+    // A file that is already shown changes no state, so nothing would render: go to the line now.
+    applyPendingLine();
+  }
+
+  /** Moves the cursor to the pending line if the file it is for is the one the widget holds. */
+  private void applyPendingLine() {
+    if (binding == null || pendingPath == null || !pendingPath.equals(currentPath)) {
+      return;
+    }
+    int lines = binding.editor.getText().getLineCount();
+    int line = Math.max(0, Math.min(pendingLine - 1, lines - 1));
+    pendingPath = null;
+    pendingLine = 0;
+    binding.editor.setSelection(line, 0);
   }
 
   /**
@@ -360,6 +392,9 @@ public final class EditorFragment extends Fragment {
     boolean loading = shown != null && state.isLoading(shown);
     binding.editor.setEditable(shown != null && !loading);
     binding.progress.setVisibility(loading ? View.VISIBLE : View.GONE);
+    if (!loading) {
+      applyPendingLine();
+    }
 
     if (state.error() != null) {
       Snackbar.make(binding.getRoot(), EditorErrors.reason(state.error()), Snackbar.LENGTH_LONG)

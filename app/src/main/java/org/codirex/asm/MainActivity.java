@@ -305,7 +305,7 @@ public final class MainActivity extends AppCompatActivity
 
   /** Goes back from the build screen to the project that owns the file and opens it there. */
   @Override
-  public void openBuildFile(String absolutePath) {
+  public void openBuildFile(String absolutePath, int line) {
     String root = new File(getFilesDir(), "projects").getPath() + "/";
     if (!absolutePath.startsWith(root)) {
       return;
@@ -318,7 +318,7 @@ public final class MainActivity extends AppCompatActivity
     getSupportFragmentManager().popBackStackImmediate();
     WorkspaceFragment workspace = workspace();
     if (workspace != null && workspace.project().value().equals(inside.substring(0, slash))) {
-      workspace.openFile(inside.substring(slash + 1));
+      workspace.openFile(inside.substring(slash + 1), line);
     }
   }
 

@@ -94,10 +94,15 @@ public final class WorkspaceFragment extends Fragment {
 
   /** Opens a file of the project in the editor and closes the drawer. */
   void openFile(String relativePath) {
+    openFile(relativePath, 0);
+  }
+
+  /** Opens a file and puts the cursor on {@code line} (1-based; 0 means the top). */
+  void openFile(String relativePath, int line) {
     binding.drawer.closeDrawer(GravityCompat.START);
     EditorFragment editor = editor();
     if (editor != null) {
-      editor.open(relativePath);
+      editor.open(relativePath, line);
     }
   }
 
