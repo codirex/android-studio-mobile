@@ -7,6 +7,7 @@ import android.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -102,6 +103,27 @@ final class JavaLanguageServer {
       }
     }
     return uri.toString();
+  }
+
+  /**
+   * What jdt.ls is told at the start. It does not import Gradle or Maven builds: the IDE builds in
+   * the terminal, and the import would cost memory and fetch dependencies over the network.
+   */
+  static Map<String, Object> initializationOptions() {
+    Map<String, Object> gradle = new LinkedHashMap<>();
+    gradle.put("enabled", false);
+    Map<String, Object> maven = new LinkedHashMap<>();
+    maven.put("enabled", false);
+    Map<String, Object> imports = new LinkedHashMap<>();
+    imports.put("gradle", gradle);
+    imports.put("maven", maven);
+    Map<String, Object> java = new LinkedHashMap<>();
+    java.put("import", imports);
+    Map<String, Object> settings = new LinkedHashMap<>();
+    settings.put("java", java);
+    Map<String, Object> options = new LinkedHashMap<>();
+    options.put("settings", settings);
+    return options;
   }
 
   /** Who hears of state and diagnostics; the screen sets it when it appears and clears it. */
@@ -264,6 +286,7 @@ final class JavaLanguageServer {
             new ParcelFileDescriptor.AutoCloseInputStream(descriptor),
             new ParcelFileDescriptor.AutoCloseOutputStream(descriptor),
             rootUri,
+            initializationOptions(),
             this::notifyDiagnostics);
     synchronized (lock) {
       if (state != State.STARTING) {
