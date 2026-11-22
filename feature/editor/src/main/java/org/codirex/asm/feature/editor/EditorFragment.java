@@ -15,6 +15,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 import dagger.hilt.android.AndroidEntryPoint;
 import io.github.rosemoe.sora.event.ContentChangeEvent;
+import io.github.rosemoe.sora.lang.diagnostic.DiagnosticDetail;
 import io.github.rosemoe.sora.lang.diagnostic.DiagnosticProvider;
 import io.github.rosemoe.sora.lang.diagnostic.DiagnosticRegion;
 import io.github.rosemoe.sora.lang.diagnostic.DiagnosticsContainer;
@@ -281,7 +282,10 @@ public final class EditorFragment extends Fragment {
     binding.editor.invalidateDiagnostics();
   }
 
-  /** Gives the editor the squiggles for the diagnostics of the shown file. */
+  /**
+   * Gives the editor the squiggles for the diagnostics of the shown file, each with the server's
+   * message for the editor's tooltip.
+   */
   private void provideDiagnostics(DiagnosticsContainer container) {
     if (binding == null || diagnostics.isEmpty() || currentPath == null) {
       return;
@@ -307,7 +311,8 @@ public final class EditorFragment extends Fragment {
               : d.severity() == Diagnostic.WARNING
                   ? DiagnosticRegion.SEVERITY_WARNING
                   : DiagnosticRegion.SEVERITY_TYPO;
-      regions.add(new DiagnosticRegion(start, end, severity));
+      DiagnosticDetail detail = new DiagnosticDetail(d.message(), null, null, null);
+      regions.add(new DiagnosticRegion(start, end, severity, regions.size(), detail));
     }
     container.addDiagnostics(regions);
   }
