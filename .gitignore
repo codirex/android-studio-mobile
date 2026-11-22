@@ -1,6 +1,8 @@
 # Gradle
 .gradle/
 build/
+# The module :feature:build is source, not output.
+!/feature/build/
 !gradle/wrapper/gradle-wrapper.jar
 
 # Android

@@ -22,7 +22,9 @@ def find_modules():
     modules = {}
     for build_file in ROOT.rglob("build.gradle.kts"):
         rel = build_file.parent.relative_to(ROOT)
-        if rel == Path(".") or any(part in SKIPPED_DIRS for part in rel.parts):
+        # A module may be called "build" (:feature:build); only the folders below a module are output.
+        parts = rel.parts[2:] if len(rel.parts) > 1 and rel.parts[0] in LAYERS else rel.parts
+        if rel == Path(".") or any(part in SKIPPED_DIRS for part in parts) or rel.parts[0] in SKIPPED_DIRS:
             continue
         modules[":" + ":".join(rel.parts)] = build_file
     return modules
