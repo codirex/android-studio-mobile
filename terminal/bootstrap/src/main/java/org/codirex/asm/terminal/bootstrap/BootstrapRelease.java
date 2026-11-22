@@ -16,9 +16,9 @@ public final class BootstrapRelease {
   /** The release the app ships with. Hashes are of the archives attached to that release. */
   public static final BootstrapRelease DEFAULT =
       new BootstrapRelease(
-          "https://github.com/codirex/asm-packages/releases/download/bootstrap-v1/",
+          "https://github.com/codirex/asm-packages/releases/download/bootstrap-v2/",
           hashes(BootstrapArch.AARCH64,
-              "53d5871e947f1b5ec8ebf2367854b4a605aafa930da24e231f272e731131f872"));
+              "27c55343d4a2c9392d738180c7885b334709ea4c7a2e0278b902597a324e6eb7"));
 
   private final String baseUrl;
   private final Map<BootstrapArch, String> sha256;
