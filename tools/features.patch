@@ -1,0 +1,722 @@
+diff -ruN -U1 a/domain/lsp/src/main/java/org/codirex/asm/domain/lsp/LanguageSession.java b/domain/lsp/src/main/java/org/codirex/asm/domain/lsp/LanguageSession.java
+--- a/domain/lsp/src/main/java/org/codirex/asm/domain/lsp/LanguageSession.java
++++ b/domain/lsp/src/main/java/org/codirex/asm/domain/lsp/LanguageSession.java
+@@ -72,6 +72,17 @@
+     Map<String, Object> textDocument = new LinkedHashMap<>();
+     textDocument.put("synchronization", synchronization);
+     textDocument.put("completion", completion);
++    Map<String, Object> hover = new LinkedHashMap<>();
++    hover.put("dynamicRegistration", false);
++    hover.put("contentFormat", java.util.Arrays.asList("plaintext", "markdown"));
++    textDocument.put("hover", hover);
++    Map<String, Object> definition = new LinkedHashMap<>();
++    definition.put("dynamicRegistration", false);
++    definition.put("linkSupport", true);
++    textDocument.put("definition", definition);
++    Map<String, Object> formatting = new LinkedHashMap<>();
++    formatting.put("dynamicRegistration", false);
++    textDocument.put("formatting", formatting);
+     textDocument.put("publishDiagnostics", publish);
+     Map<String, Object> workspace = new LinkedHashMap<>();
+     workspace.put("configuration", true);
+@@ -151,6 +162,45 @@
+     return client.request("textDocument/completion", params).thenApply(LanguageSession::items);
+   }
+ 
++  /** Asks what the server knows about the symbol at a position (zero based): plain text, or empty. */
++  public CompletableFuture<String> hover(String uri, int line, int character) {
++    return client
++        .request("textDocument/hover", positionParams(uri, line, character))
++        .thenApply(LanguageSession::hoverOf);
++  }
++
++  /** Asks where the symbol at a position (zero based) is defined. */
++  public CompletableFuture<List<Location>> definition(String uri, int line, int character) {
++    return client
++        .request("textDocument/definition", positionParams(uri, line, character))
++        .thenApply(LanguageSession::locationsOf);
++  }
++
++  /** Asks how the server would format the whole document: the edits to apply, last to first. */
++  public CompletableFuture<List<TextEdit>> format(String uri, int tabSize) {
++    Map<String, Object> document = new LinkedHashMap<>();
++    document.put("uri", uri);
++    Map<String, Object> options = new LinkedHashMap<>();
++    options.put("tabSize", (long) tabSize);
++    options.put("insertSpaces", true);
++    Map<String, Object> params = new LinkedHashMap<>();
++    params.put("textDocument", document);
++    params.put("options", options);
++    return client.request("textDocument/formatting", params).thenApply(LanguageSession::editsOf);
++  }
++
++  private static Map<String, Object> positionParams(String uri, int line, int character) {
++    Map<String, Object> document = new LinkedHashMap<>();
++    document.put("uri", uri);
++    Map<String, Object> position = new LinkedHashMap<>();
++    position.put("line", (long) line);
++    position.put("character", (long) character);
++    Map<String, Object> params = new LinkedHashMap<>();
++    params.put("textDocument", document);
++    params.put("position", position);
++    return params;
++  }
++
+   /** Ends the conversation politely: {@code shutdown}, then {@code exit}. */
+   public CompletableFuture<Void> shutdown() {
+     return client
+@@ -234,6 +284,116 @@
+         endCharacter);
+   }
+ 
++  /** The text of a hover answer: a string, MarkupContent, MarkedString or a list of those. */
++  static String hoverOf(Object result) {
++    if (!(result instanceof Map)) {
++      return "";
++    }
++    StringBuilder out = new StringBuilder();
++    addContents(((Map<?, ?>) result).get("contents"), out);
++    return out.toString().trim();
++  }
++
++  private static void addContents(Object contents, StringBuilder out) {
++    String piece = null;
++    if (contents instanceof String) {
++      piece = (String) contents;
++    } else if (contents instanceof Map) {
++      Object value = ((Map<?, ?>) contents).get("value");
++      piece = value instanceof String ? (String) value : null;
++    } else if (contents instanceof List) {
++      for (Object entry : (List<?>) contents) {
++        addContents(entry, out);
++      }
++      return;
++    }
++    if (piece == null) {
++      return;
++    }
++    StringBuilder clean = new StringBuilder();
++    for (String line : piece.split("\\r?\\n", -1)) {
++      // Code fences are Markdown decoration; the screen shows plain text.
++      if (!line.trim().startsWith("```")) {
++        clean.append(line).append('\n');
++      }
++    }
++    String text = clean.toString().trim();
++    if (!text.isEmpty()) {
++      if (out.length() > 0) {
++        out.append("\n\n");
++      }
++      out.append(text);
++    }
++  }
++
++  /** Location, Location[] or LocationLink[]; anything else gives an empty list. */
++  static List<Location> locationsOf(Object result) {
++    List<Location> found = new ArrayList<>();
++    if (result instanceof Map) {
++      addLocation((Map<?, ?>) result, found);
++    } else if (result instanceof List) {
++      for (Object entry : (List<?>) result) {
++        if (entry instanceof Map) {
++          addLocation((Map<?, ?>) entry, found);
++        }
++      }
++    }
++    return found;
++  }
++
++  private static void addLocation(Map<?, ?> map, List<Location> found) {
++    Object uri = map.get("uri");
++    Object range = map.get("range");
++    if (!(uri instanceof String)) {
++      // A LocationLink names its target instead.
++      uri = map.get("targetUri");
++      range = map.get("targetSelectionRange");
++      if (range == null) {
++        range = map.get("targetRange");
++      }
++    }
++    if (uri instanceof String && range instanceof Map) {
++      Object start = ((Map<?, ?>) range).get("start");
++      found.add(
++          new Location(
++              (String) uri, number(position(start, "line"), 0), number(position(start, "character"), 0)));
++    }
++  }
++
++  /** The edits of a formatting answer, sorted so that applying them one after the other is safe. */
++  static List<TextEdit> editsOf(Object result) {
++    List<TextEdit> edits = new ArrayList<>();
++    if (!(result instanceof List)) {
++      return edits;
++    }
++    for (Object entry : (List<?>) result) {
++      if (!(entry instanceof Map)) {
++        continue;
++      }
++      Map<?, ?> map = (Map<?, ?>) entry;
++      Object range = map.get("range");
++      if (!(range instanceof Map) || !(map.get("newText") instanceof String)) {
++        continue;
++      }
++      Map<?, ?> r = (Map<?, ?>) range;
++      edits.add(
++          new TextEdit(
++              number(position(r.get("start"), "line"), 0),
++              number(position(r.get("start"), "character"), 0),
++              number(position(r.get("end"), "line"), 0),
++              number(position(r.get("end"), "character"), 0),
++              (String) map.get("newText")));
++    }
++    // Last position first: an edit then never moves the places of those still to apply.
++    Collections.sort(
++        edits,
++        (a, b) ->
++            a.startLine() != b.startLine()
++                ? Integer.compare(b.startLine(), a.startLine())
++                : Integer.compare(b.startCharacter(), a.startCharacter()));
++    return edits;
++  }
++
+   static List<Diagnostic> diagnosticsOf(Object list) {
+     List<Diagnostic> result = new ArrayList<>();
+     if (!(list instanceof List)) {
+diff -ruN -U1 a/domain/lsp/src/main/java/org/codirex/asm/domain/lsp/Location.java b/domain/lsp/src/main/java/org/codirex/asm/domain/lsp/Location.java
+--- a/domain/lsp/src/main/java/org/codirex/asm/domain/lsp/Location.java
++++ b/domain/lsp/src/main/java/org/codirex/asm/domain/lsp/Location.java
+@@ -0,0 +1,49 @@
++package org.codirex.asm.domain.lsp;
++
++import java.util.Objects;
++
++/** A place in a document the server points at: its address and the start of the range (zero based). Immutable. */
++public final class Location {
++
++  private final String uri;
++  private final int line;
++  private final int character;
++
++  public Location(String uri, int line, int character) {
++    this.uri = Objects.requireNonNull(uri, "uri");
++    this.line = line;
++    this.character = character;
++  }
++
++  public String uri() {
++    return uri;
++  }
++
++  /** Zero based. */
++  public int line() {
++    return line;
++  }
++
++  /** Zero based. */
++  public int character() {
++    return character;
++  }
++
++  @Override
++  public boolean equals(Object other) {
++    return other instanceof Location
++        && uri.equals(((Location) other).uri)
++        && line == ((Location) other).line
++        && character == ((Location) other).character;
++  }
++
++  @Override
++  public int hashCode() {
++    return Objects.hash(uri, line, character);
++  }
++
++  @Override
++  public String toString() {
++    return uri + ":" + line + ":" + character;
++  }
++}
+diff -ruN -U1 a/domain/lsp/src/main/java/org/codirex/asm/domain/lsp/TextEdit.java b/domain/lsp/src/main/java/org/codirex/asm/domain/lsp/TextEdit.java
+--- a/domain/lsp/src/main/java/org/codirex/asm/domain/lsp/TextEdit.java
++++ b/domain/lsp/src/main/java/org/codirex/asm/domain/lsp/TextEdit.java
+@@ -0,0 +1,60 @@
++package org.codirex.asm.domain.lsp;
++
++import java.util.Objects;
++
++/** A change the server asks for: the text of a range (zero based, end exclusive) becomes {@link #newText()}. Immutable. */
++public final class TextEdit {
++
++  private final int startLine;
++  private final int startCharacter;
++  private final int endLine;
++  private final int endCharacter;
++  private final String newText;
++
++  public TextEdit(
++      int startLine, int startCharacter, int endLine, int endCharacter, String newText) {
++    this.startLine = startLine;
++    this.startCharacter = startCharacter;
++    this.endLine = endLine;
++    this.endCharacter = endCharacter;
++    this.newText = Objects.requireNonNull(newText, "newText");
++  }
++
++  public int startLine() {
++    return startLine;
++  }
++
++  public int startCharacter() {
++    return startCharacter;
++  }
++
++  public int endLine() {
++    return endLine;
++  }
++
++  public int endCharacter() {
++    return endCharacter;
++  }
++
++  public String newText() {
++    return newText;
++  }
++
++  @Override
++  public boolean equals(Object other) {
++    if (!(other instanceof TextEdit)) {
++      return false;
++    }
++    TextEdit e = (TextEdit) other;
++    return startLine == e.startLine
++        && startCharacter == e.startCharacter
++        && endLine == e.endLine
++        && endCharacter == e.endCharacter
++        && newText.equals(e.newText);
++  }
++
++  @Override
++  public int hashCode() {
++    return Objects.hash(startLine, startCharacter, endLine, endCharacter, newText);
++  }
++}
+diff -ruN -U1 a/domain/lsp/src/test/java/org/codirex/asm/domain/lsp/LanguageFeaturesTest.java b/domain/lsp/src/test/java/org/codirex/asm/domain/lsp/LanguageFeaturesTest.java
+--- a/domain/lsp/src/test/java/org/codirex/asm/domain/lsp/LanguageFeaturesTest.java
++++ b/domain/lsp/src/test/java/org/codirex/asm/domain/lsp/LanguageFeaturesTest.java
+@@ -0,0 +1,65 @@
++package org.codirex.asm.domain.lsp;
++
++import static org.junit.Assert.assertEquals;
++import static org.junit.Assert.assertTrue;
++
++import java.util.List;
++import org.junit.Test;
++
++public final class LanguageFeaturesTest {
++
++  private static Object json(String text) {
++    try {
++      return Json.parse(text);
++    } catch (JsonException e) {
++      throw new AssertionError(e);
++    }
++  }
++
++  @Test
++  public void hoverReadsMarkedStringsAndMarkupAndDropsFences() {
++    String answer =
++        LanguageSession.hoverOf(
++            json(
++                "{\"contents\":[{\"language\":\"java\",\"value\":\"void println(String x)\"},"
++                    + "\"Prints a line.\\n\\n```java\\nfoo\\n```\"]}"));
++    assertEquals("void println(String x)\n\nPrints a line.\n\nfoo", answer);
++    assertEquals("text", LanguageSession.hoverOf(json("{\"contents\":{\"kind\":\"markdown\",\"value\":\"text\"}}")));
++    assertEquals("plain", LanguageSession.hoverOf(json("{\"contents\":\"plain\"}")));
++  }
++
++  @Test
++  public void hoverOfNothingIsEmpty() {
++    assertEquals("", LanguageSession.hoverOf(null));
++    assertEquals("", LanguageSession.hoverOf(json("{\"contents\":[]}")));
++  }
++
++  @Test
++  public void locationsReadLocationsAndLinks() {
++    List<Location> one =
++        LanguageSession.locationsOf(
++            json("{\"uri\":\"file:///A.java\",\"range\":{\"start\":{\"line\":4,\"character\":2},\"end\":{\"line\":4,\"character\":9}}}"));
++    assertEquals(new Location("file:///A.java", 4, 2), one.get(0));
++    List<Location> links =
++        LanguageSession.locationsOf(
++            json("[{\"targetUri\":\"file:///B.java\",\"targetRange\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":9,\"character\":0}},"
++                + "\"targetSelectionRange\":{\"start\":{\"line\":3,\"character\":6},\"end\":{\"line\":3,\"character\":8}}},{\"junk\":1}]"));
++    assertEquals(1, links.size());
++    assertEquals(new Location("file:///B.java", 3, 6), links.get(0));
++    assertTrue(LanguageSession.locationsOf(null).isEmpty());
++  }
++
++  @Test
++  public void editsComeLastPositionFirst() {
++    List<TextEdit> edits =
++        LanguageSession.editsOf(
++            json("[{\"range\":{\"start\":{\"line\":0,\"character\":1},\"end\":{\"line\":0,\"character\":2}},\"newText\":\"a\"},"
++                + "{\"range\":{\"start\":{\"line\":5,\"character\":0},\"end\":{\"line\":5,\"character\":0}},\"newText\":\"b\"},"
++                + "{\"range\":{\"start\":{\"line\":0,\"character\":7},\"end\":{\"line\":1,\"character\":0}},\"newText\":\"c\"},"
++                + "{\"newText\":\"no range\"}]"));
++    assertEquals(3, edits.size());
++    assertEquals("b", edits.get(0).newText());
++    assertEquals("c", edits.get(1).newText());
++    assertEquals("a", edits.get(2).newText());
++  }
++}
+diff -ruN -U1 a/feature/editor/src/main/java/org/codirex/asm/feature/editor/EditorFragment.java b/feature/editor/src/main/java/org/codirex/asm/feature/editor/EditorFragment.java
+--- a/feature/editor/src/main/java/org/codirex/asm/feature/editor/EditorFragment.java
++++ b/feature/editor/src/main/java/org/codirex/asm/feature/editor/EditorFragment.java
+@@ -1,6 +1,7 @@
+ package org.codirex.asm.feature.editor;
+ 
+ import android.content.res.Configuration;
++import android.net.Uri;
+ import android.os.Bundle;
+ import android.os.Handler;
+ import android.os.Looper;
+@@ -11,6 +12,7 @@
+ import androidx.annotation.Nullable;
+ import androidx.fragment.app.Fragment;
+ import androidx.lifecycle.ViewModelProvider;
++import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+ import com.google.android.material.snackbar.Snackbar;
+ import com.google.android.material.tabs.TabLayout;
+ import dagger.hilt.android.AndroidEntryPoint;
+@@ -31,6 +33,8 @@
+ import java.util.Set;
+ import org.codirex.asm.domain.editor.SourceLanguage;
+ import org.codirex.asm.domain.lsp.Diagnostic;
++import org.codirex.asm.domain.lsp.Location;
++import org.codirex.asm.domain.lsp.TextEdit;
+ import org.codirex.asm.domain.project.ProjectName;
+ import org.codirex.asm.feature.editor.databinding.FragmentEditorBinding;
+ import org.codirex.asm.feature.editor.databinding.ItemEditorTabBinding;
+@@ -213,6 +217,9 @@
+ 
+     binding.showFiles.setOnClickListener(
+         v -> ((EditorNavigator) requireActivity()).showFileTree());
++    binding.javaDefinition.setOnClickListener(v -> goToDefinition());
++    binding.javaHover.setOnClickListener(v -> showHover());
++    binding.javaFormat.setOnClickListener(v -> formatDocument());
+     binding.tabs.addOnTabSelectedListener(
+         new TabLayout.OnTabSelectedListener() {
+           @Override
+@@ -292,6 +299,7 @@
+     if (binding == null) {
+       return;
+     }
++    updateJavaTools();
+     if (state == JavaLanguageServer.State.MISSING && !installOffered) {
+       installOffered = true;
+       Snackbar.make(binding.getRoot(), R.string.editor_java_server_missing, Snackbar.LENGTH_INDEFINITE)
+@@ -349,6 +357,148 @@
+     container.addDiagnostics(regions);
+   }
+ 
++  /** The buttons for definition, information and format: only for Java with a ready server. */
++  private void updateJavaTools() {
++    boolean ready =
++        javaServer != null
++            && javaServer.state() == JavaLanguageServer.State.READY
++            && isJava(currentPath);
++    binding.javaTools.setVisibility(ready ? View.VISIBLE : View.GONE);
++  }
++
++  private void say(int message) {
++    if (binding != null) {
++      Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_SHORT).show();
++    }
++  }
++
++  /** Goes to the definition of the symbol at the caret. */
++  private void goToDefinition() {
++    final String path = currentPath;
++    final JavaLanguageServer server = javaServer;
++    if (binding == null || server == null || !isJava(path)) {
++      return;
++    }
++    final String text = binding.editor.getText().toString();
++    final int line = binding.editor.getCursor().getLeftLine();
++    final int column = binding.editor.getCursor().getLeftColumn();
++    final String uri = uriOf(path);
++    new Thread(
++            () -> {
++              List<Location> found = server.definition(uri, text, line, column);
++              handler.post(() -> showDefinition(found));
++            },
++            "java-definition")
++        .start();
++  }
++
++  private void showDefinition(@Nullable List<Location> found) {
++    if (binding == null) {
++      return;
++    }
++    if (found == null) {
++      say(R.string.editor_java_not_available);
++      return;
++    }
++    if (found.isEmpty()) {
++      say(R.string.editor_java_nothing_found);
++      return;
++    }
++    Location target = found.get(0);
++    String prefix = JavaLanguageServer.uriOf(projectDirectory) + "/";
++    if (!target.uri().startsWith(prefix)) {
++      say(R.string.editor_java_outside_project);
++      return;
++    }
++    open(Uri.decode(target.uri().substring(prefix.length())), target.line() + 1);
++  }
++
++  /** Shows what the server says about the symbol at the caret. */
++  private void showHover() {
++    final String path = currentPath;
++    final JavaLanguageServer server = javaServer;
++    if (binding == null || server == null || !isJava(path)) {
++      return;
++    }
++    final String text = binding.editor.getText().toString();
++    final int line = binding.editor.getCursor().getLeftLine();
++    final int column = binding.editor.getCursor().getLeftColumn();
++    final String uri = uriOf(path);
++    new Thread(
++            () -> {
++              String info = server.hover(uri, text, line, column);
++              handler.post(
++                  () -> {
++                    if (binding == null) {
++                      return;
++                    }
++                    if (info == null) {
++                      say(R.string.editor_java_not_available);
++                    } else if (info.isEmpty()) {
++                      say(R.string.editor_java_nothing_found);
++                    } else {
++                      new MaterialAlertDialogBuilder(requireContext())
++                          .setMessage(info)
++                          .setPositiveButton(android.R.string.ok, null)
++                          .show();
++                    }
++                  });
++            },
++            "java-hover")
++        .start();
++  }
++
++  /** Formats the shown Java file the way the server does. */
++  private void formatDocument() {
++    final String path = currentPath;
++    final JavaLanguageServer server = javaServer;
++    if (binding == null || server == null || !isJava(path)) {
++      return;
++    }
++    final String text = binding.editor.getText().toString();
++    final String uri = uriOf(path);
++    new Thread(
++            () -> {
++              List<TextEdit> edits = server.format(uri, text, 4);
++              handler.post(() -> applyFormatting(path, text, edits));
++            },
++            "java-format")
++        .start();
++  }
++
++  private void applyFormatting(String path, String before, @Nullable List<TextEdit> edits) {
++    if (binding == null) {
++      return;
++    }
++    if (edits == null) {
++      say(R.string.editor_java_not_available);
++      return;
++    }
++    if (edits.isEmpty()) {
++      say(R.string.editor_java_already_formatted);
++      return;
++    }
++    // The edits are for the text the server saw: if the person typed since, they do not fit.
++    if (!path.equals(currentPath) || !before.equals(binding.editor.getText().toString())) {
++      say(R.string.editor_java_text_changed);
++      return;
++    }
++    io.github.rosemoe.sora.text.Content content = binding.editor.getText();
++    content.beginBatchEdit();
++    for (TextEdit edit : edits) {
++      int lastLine = content.getLineCount() - 1;
++      int startLine = Math.min(edit.startLine(), lastLine);
++      int endLine = Math.min(edit.endLine(), lastLine);
++      content.replace(
++          startLine,
++          Math.min(edit.startCharacter(), content.getColumnCount(startLine)),
++          endLine,
++          Math.min(edit.endCharacter(), content.getColumnCount(endLine)),
++          edit.newText());
++    }
++    content.endBatchEdit();
++  }
++
+   /** Hands the live text of the shown document to the view model, which saves it if changed. */
+   private void snapshotCurrent() {
+     handler.removeCallbacks(autoSave);
+@@ -392,6 +542,7 @@
+     boolean loading = shown != null && state.isLoading(shown);
+     binding.editor.setEditable(shown != null && !loading);
+     binding.progress.setVisibility(loading ? View.VISIBLE : View.GONE);
++    updateJavaTools();
+     if (!loading) {
+       applyPendingLine();
+     }
+diff -ruN -U1 a/feature/editor/src/main/java/org/codirex/asm/feature/editor/JavaLanguageServer.java b/feature/editor/src/main/java/org/codirex/asm/feature/editor/JavaLanguageServer.java
+--- a/feature/editor/src/main/java/org/codirex/asm/feature/editor/JavaLanguageServer.java
++++ b/feature/editor/src/main/java/org/codirex/asm/feature/editor/JavaLanguageServer.java
+@@ -16,6 +16,8 @@
+ import org.codirex.asm.domain.lsp.CompletionItem;
+ import org.codirex.asm.domain.lsp.Diagnostic;
+ import org.codirex.asm.domain.lsp.LanguageSession;
++import org.codirex.asm.domain.lsp.Location;
++import org.codirex.asm.domain.lsp.TextEdit;
+ import org.codirex.asm.terminal.protocol.ITerminalService;
+ import org.codirex.asm.terminal.view.TerminalConnection;
+ 
+@@ -30,6 +32,7 @@
+   private static final String TAG = "JavaLanguageServer";
+   private static final String LANGUAGE = "java";
+   private static final long COMPLETION_TIMEOUT_SECONDS = 4;
++  private static final long ANSWER_TIMEOUT_SECONDS = 10;
+ 
+   enum State {
+     /** Not started. */
+@@ -265,6 +268,49 @@
+     }
+   }
+ 
++  /**
++   * Asks the server something about a document, after it has the text as it is now. Null if the
++   * server is not ready or does not answer in time. Waits, so call it from a worker thread.
++   */
++  private <T> T ask(
++      String uri,
++      String text,
++      java.util.function.Function<LanguageSession, java.util.concurrent.CompletableFuture<T>>
++          question) {
++    LanguageSession current;
++    synchronized (lock) {
++      if (state != State.READY || session == null) {
++        return null;
++      }
++      current = session;
++      wanted.put(uri, text);
++    }
++    sync(uri);
++    try {
++      return question.apply(current).get(ANSWER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
++    } catch (InterruptedException e) {
++      Thread.currentThread().interrupt();
++      return null;
++    } catch (Exception e) {
++      return null;
++    }
++  }
++
++  /** What the server says about the symbol at a position (zero based): text, empty, or null. */
++  String hover(String uri, String text, int line, int column) {
++    return ask(uri, text, s -> s.hover(uri, line, column));
++  }
++
++  /** Where the symbol at a position (zero based) is defined; null if the server did not answer. */
++  List<Location> definition(String uri, String text, int line, int column) {
++    return ask(uri, text, s -> s.definition(uri, line, column));
++  }
++
++  /** The edits that format the document, last position first; null if the server did not answer. */
++  List<TextEdit> format(String uri, String text, int tabSize) {
++    return ask(uri, text, s -> s.format(uri, tabSize));
++  }
++
+   // ---- inside ----
+ 
+   private void open(ITerminalService service) {
+diff -ruN -U1 a/feature/editor/src/main/res/layout/fragment_editor.xml b/feature/editor/src/main/res/layout/fragment_editor.xml
+--- a/feature/editor/src/main/res/layout/fragment_editor.xml
++++ b/feature/editor/src/main/res/layout/fragment_editor.xml
+@@ -28,6 +28,41 @@
+             app:tabMode="scrollable" />
+     </LinearLayout>
+ 
++    <HorizontalScrollView
++        android:id="@+id/java_tools"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:scrollbars="none"
++        android:visibility="gone">
++
++        <LinearLayout
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:orientation="horizontal">
++
++            <com.google.android.material.button.MaterialButton
++                android:id="@+id/java_definition"
++                style="@style/Widget.Material3.Button.TextButton"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:text="@string/editor_java_definition" />
++
++            <com.google.android.material.button.MaterialButton
++                android:id="@+id/java_hover"
++                style="@style/Widget.Material3.Button.TextButton"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:text="@string/editor_java_hover" />
++
++            <com.google.android.material.button.MaterialButton
++                android:id="@+id/java_format"
++                style="@style/Widget.Material3.Button.TextButton"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:text="@string/editor_java_format" />
++        </LinearLayout>
++    </HorizontalScrollView>
++
+     <FrameLayout
+         android:layout_width="match_parent"
+         android:layout_height="0dp"
+diff -ruN -U1 a/feature/editor/src/main/res/values/strings.xml b/feature/editor/src/main/res/values/strings.xml
+--- a/feature/editor/src/main/res/values/strings.xml
++++ b/feature/editor/src/main/res/values/strings.xml
+@@ -13,4 +13,13 @@
+ 
+     <string name="editor_java_server_missing">The Java language server is not installed. It gives completion and error marks for Java.</string>
+     <string name="editor_java_server_install">Install</string>
++
++    <string name="editor_java_definition">Definition</string>
++    <string name="editor_java_hover">Info</string>
++    <string name="editor_java_format">Format</string>
++    <string name="editor_java_nothing_found">Nothing found here.</string>
++    <string name="editor_java_outside_project">The definition is outside the project (a library or the JDK).</string>
++    <string name="editor_java_not_available">The language server did not answer.</string>
++    <string name="editor_java_already_formatted">Already formatted.</string>
++    <string name="editor_java_text_changed">The text changed while formatting; try again.</string>
+ </resources>
+diff -ruN -U1 a/feature/editor/src/main/res/values-ar/strings.xml b/feature/editor/src/main/res/values-ar/strings.xml
+--- a/feature/editor/src/main/res/values-ar/strings.xml
++++ b/feature/editor/src/main/res/values-ar/strings.xml
+@@ -13,4 +13,13 @@
+ 
+     <string name="editor_java_server_missing">خادم لغة جافا غير مثبّت. يوفّر الإكمال التلقائي وعلامات الأخطاء لجافا.</string>
+     <string name="editor_java_server_install">تثبيت</string>
++
++    <string name="editor_java_definition">التعريف</string>
++    <string name="editor_java_hover">معلومات</string>
++    <string name="editor_java_format">تنسيق</string>
++    <string name="editor_java_nothing_found">لا شيء هنا.</string>
++    <string name="editor_java_outside_project">التعريف خارج المشروع (مكتبة أو JDK).</string>
++    <string name="editor_java_not_available">لم يرد خادم اللغة.</string>
++    <string name="editor_java_already_formatted">الملف منسّق بالفعل.</string>
++    <string name="editor_java_text_changed">تغيّر النص أثناء التنسيق؛ حاول مرة أخرى.</string>
+ </resources>
