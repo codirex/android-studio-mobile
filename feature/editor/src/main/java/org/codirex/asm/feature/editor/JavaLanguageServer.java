@@ -16,6 +16,8 @@ import java.util.concurrent.TimeUnit;
 import org.codirex.asm.domain.lsp.CompletionItem;
 import org.codirex.asm.domain.lsp.Diagnostic;
 import org.codirex.asm.domain.lsp.LanguageSession;
+import org.codirex.asm.domain.lsp.Location;
+import org.codirex.asm.domain.lsp.TextEdit;
 import org.codirex.asm.terminal.protocol.ITerminalService;
 import org.codirex.asm.terminal.view.TerminalConnection;
 
@@ -30,6 +32,7 @@ final class JavaLanguageServer {
   private static final String TAG = "JavaLanguageServer";
   private static final String LANGUAGE = "java";
   private static final long COMPLETION_TIMEOUT_SECONDS = 4;
+  private static final long ANSWER_TIMEOUT_SECONDS = 10;
 
   enum State {
     /** Not started. */
@@ -263,6 +266,49 @@ final class JavaLanguageServer {
     } catch (Exception e) {
       return null;
     }
+  }
+
+  /**
+   * Asks the server something about a document, after it has the text as it is now. Null if the
+   * server is not ready or does not answer in time. Waits, so call it from a worker thread.
+   */
+  private <T> T ask(
+      String uri,
+      String text,
+      java.util.function.Function<LanguageSession, java.util.concurrent.CompletableFuture<T>>
+          question) {
+    LanguageSession current;
+    synchronized (lock) {
+      if (state != State.READY || session == null) {
+        return null;
+      }
+      current = session;
+      wanted.put(uri, text);
+    }
+    sync(uri);
+    try {
+      return question.apply(current).get(ANSWER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return null;
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  /** What the server says about the symbol at a position (zero based): text, empty, or null. */
+  String hover(String uri, String text, int line, int column) {
+    return ask(uri, text, s -> s.hover(uri, line, column));
+  }
+
+  /** Where the symbol at a position (zero based) is defined; null if the server did not answer. */
+  List<Location> definition(String uri, String text, int line, int column) {
+    return ask(uri, text, s -> s.definition(uri, line, column));
+  }
+
+  /** The edits that format the document, last position first; null if the server did not answer. */
+  List<TextEdit> format(String uri, String text, int tabSize) {
+    return ask(uri, text, s -> s.format(uri, tabSize));
   }
 
   // ---- inside ----

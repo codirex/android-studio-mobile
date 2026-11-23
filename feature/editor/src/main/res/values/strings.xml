@@ -13,4 +13,13 @@
 
     <string name="editor_java_server_missing">The Java language server is not installed. It gives completion and error marks for Java.</string>
     <string name="editor_java_server_install">Install</string>
+
+    <string name="editor_java_definition">Definition</string>
+    <string name="editor_java_hover">Info</string>
+    <string name="editor_java_format">Format</string>
+    <string name="editor_java_nothing_found">Nothing found here.</string>
+    <string name="editor_java_outside_project">The definition is outside the project (a library or the JDK).</string>
+    <string name="editor_java_not_available">The language server did not answer.</string>
+    <string name="editor_java_already_formatted">Already formatted.</string>
+    <string name="editor_java_text_changed">The text changed while formatting; try again.</string>
 </resources>

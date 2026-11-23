@@ -13,4 +13,13 @@
 
     <string name="editor_java_server_missing">خادم لغة جافا غير مثبّت. يوفّر الإكمال التلقائي وعلامات الأخطاء لجافا.</string>
     <string name="editor_java_server_install">تثبيت</string>
+
+    <string name="editor_java_definition">التعريف</string>
+    <string name="editor_java_hover">معلومات</string>
+    <string name="editor_java_format">تنسيق</string>
+    <string name="editor_java_nothing_found">لا شيء هنا.</string>
+    <string name="editor_java_outside_project">التعريف خارج المشروع (مكتبة أو JDK).</string>
+    <string name="editor_java_not_available">لم يرد خادم اللغة.</string>
+    <string name="editor_java_already_formatted">الملف منسّق بالفعل.</string>
+    <string name="editor_java_text_changed">تغيّر النص أثناء التنسيق؛ حاول مرة أخرى.</string>
 </resources>

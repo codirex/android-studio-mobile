@@ -1,6 +1,7 @@
 package org.codirex.asm.feature.editor;
 
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -11,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 import dagger.hilt.android.AndroidEntryPoint;
@@ -31,6 +33,8 @@ import java.util.List;
 import java.util.Set;
 import org.codirex.asm.domain.editor.SourceLanguage;
 import org.codirex.asm.domain.lsp.Diagnostic;
+import org.codirex.asm.domain.lsp.Location;
+import org.codirex.asm.domain.lsp.TextEdit;
 import org.codirex.asm.domain.project.ProjectName;
 import org.codirex.asm.feature.editor.databinding.FragmentEditorBinding;
 import org.codirex.asm.feature.editor.databinding.ItemEditorTabBinding;
@@ -213,6 +217,9 @@ public final class EditorFragment extends Fragment {
 
     binding.showFiles.setOnClickListener(
         v -> ((EditorNavigator) requireActivity()).showFileTree());
+    binding.javaDefinition.setOnClickListener(v -> goToDefinition());
+    binding.javaHover.setOnClickListener(v -> showHover());
+    binding.javaFormat.setOnClickListener(v -> formatDocument());
     binding.tabs.addOnTabSelectedListener(
         new TabLayout.OnTabSelectedListener() {
           @Override
@@ -292,6 +299,7 @@ public final class EditorFragment extends Fragment {
     if (binding == null) {
       return;
     }
+    updateJavaTools();
     if (state == JavaLanguageServer.State.MISSING && !installOffered) {
       installOffered = true;
       Snackbar.make(binding.getRoot(), R.string.editor_java_server_missing, Snackbar.LENGTH_INDEFINITE)
@@ -349,6 +357,148 @@ public final class EditorFragment extends Fragment {
     container.addDiagnostics(regions);
   }
 
+  /** The buttons for definition, information and format: only for Java with a ready server. */
+  private void updateJavaTools() {
+    boolean ready =
+        javaServer != null
+            && javaServer.state() == JavaLanguageServer.State.READY
+            && isJava(currentPath);
+    binding.javaTools.setVisibility(ready ? View.VISIBLE : View.GONE);
+  }
+
+  private void say(int message) {
+    if (binding != null) {
+      Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_SHORT).show();
+    }
+  }
+
+  /** Goes to the definition of the symbol at the caret. */
+  private void goToDefinition() {
+    final String path = currentPath;
+    final JavaLanguageServer server = javaServer;
+    if (binding == null || server == null || !isJava(path)) {
+      return;
+    }
+    final String text = binding.editor.getText().toString();
+    final int line = binding.editor.getCursor().getLeftLine();
+    final int column = binding.editor.getCursor().getLeftColumn();
+    final String uri = uriOf(path);
+    new Thread(
+            () -> {
+              List<Location> found = server.definition(uri, text, line, column);
+              handler.post(() -> showDefinition(found));
+            },
+            "java-definition")
+        .start();
+  }
+
+  private void showDefinition(@Nullable List<Location> found) {
+    if (binding == null) {
+      return;
+    }
+    if (found == null) {
+      say(R.string.editor_java_not_available);
+      return;
+    }
+    if (found.isEmpty()) {
+      say(R.string.editor_java_nothing_found);
+      return;
+    }
+    Location target = found.get(0);
+    String prefix = JavaLanguageServer.uriOf(projectDirectory) + "/";
+    if (!target.uri().startsWith(prefix)) {
+      say(R.string.editor_java_outside_project);
+      return;
+    }
+    open(Uri.decode(target.uri().substring(prefix.length())), target.line() + 1);
+  }
+
+  /** Shows what the server says about the symbol at the caret. */
+  private void showHover() {
+    final String path = currentPath;
+    final JavaLanguageServer server = javaServer;
+    if (binding == null || server == null || !isJava(path)) {
+      return;
+    }
+    final String text = binding.editor.getText().toString();
+    final int line = binding.editor.getCursor().getLeftLine();
+    final int column = binding.editor.getCursor().getLeftColumn();
+    final String uri = uriOf(path);
+    new Thread(
+            () -> {
+              String info = server.hover(uri, text, line, column);
+              handler.post(
+                  () -> {
+                    if (binding == null) {
+                      return;
+                    }
+                    if (info == null) {
+                      say(R.string.editor_java_not_available);
+                    } else if (info.isEmpty()) {
+                      say(R.string.editor_java_nothing_found);
+                    } else {
+                      new MaterialAlertDialogBuilder(requireContext())
+                          .setMessage(info)
+                          .setPositiveButton(android.R.string.ok, null)
+                          .show();
+                    }
+                  });
+            },
+            "java-hover")
+        .start();
+  }
+
+  /** Formats the shown Java file the way the server does. */
+  private void formatDocument() {
+    final String path = currentPath;
+    final JavaLanguageServer server = javaServer;
+    if (binding == null || server == null || !isJava(path)) {
+      return;
+    }
+    final String text = binding.editor.getText().toString();
+    final String uri = uriOf(path);
+    new Thread(
+            () -> {
+              List<TextEdit> edits = server.format(uri, text, 4);
+              handler.post(() -> applyFormatting(path, text, edits));
+            },
+            "java-format")
+        .start();
+  }
+
+  private void applyFormatting(String path, String before, @Nullable List<TextEdit> edits) {
+    if (binding == null) {
+      return;
+    }
+    if (edits == null) {
+      say(R.string.editor_java_not_available);
+      return;
+    }
+    if (edits.isEmpty()) {
+      say(R.string.editor_java_already_formatted);
+      return;
+    }
+    // The edits are for the text the server saw: if the person typed since, they do not fit.
+    if (!path.equals(currentPath) || !before.equals(binding.editor.getText().toString())) {
+      say(R.string.editor_java_text_changed);
+      return;
+    }
+    io.github.rosemoe.sora.text.Content content = binding.editor.getText();
+    content.beginBatchEdit();
+    for (TextEdit edit : edits) {
+      int lastLine = content.getLineCount() - 1;
+      int startLine = Math.min(edit.startLine(), lastLine);
+      int endLine = Math.min(edit.endLine(), lastLine);
+      content.replace(
+          startLine,
+          Math.min(edit.startCharacter(), content.getColumnCount(startLine)),
+          endLine,
+          Math.min(edit.endCharacter(), content.getColumnCount(endLine)),
+          edit.newText());
+    }
+    content.endBatchEdit();
+  }
+
   /** Hands the live text of the shown document to the view model, which saves it if changed. */
   private void snapshotCurrent() {
     handler.removeCallbacks(autoSave);
@@ -392,6 +542,7 @@ public final class EditorFragment extends Fragment {
     boolean loading = shown != null && state.isLoading(shown);
     binding.editor.setEditable(shown != null && !loading);
     binding.progress.setVisibility(loading ? View.VISIBLE : View.GONE);
+    updateJavaTools();
     if (!loading) {
       applyPendingLine();
     }

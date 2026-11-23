@@ -72,6 +72,17 @@ public final class LanguageSession {
     Map<String, Object> textDocument = new LinkedHashMap<>();
     textDocument.put("synchronization", synchronization);
     textDocument.put("completion", completion);
+    Map<String, Object> hover = new LinkedHashMap<>();
+    hover.put("dynamicRegistration", false);
+    hover.put("contentFormat", java.util.Arrays.asList("plaintext", "markdown"));
+    textDocument.put("hover", hover);
+    Map<String, Object> definition = new LinkedHashMap<>();
+    definition.put("dynamicRegistration", false);
+    definition.put("linkSupport", true);
+    textDocument.put("definition", definition);
+    Map<String, Object> formatting = new LinkedHashMap<>();
+    formatting.put("dynamicRegistration", false);
+    textDocument.put("formatting", formatting);
     textDocument.put("publishDiagnostics", publish);
     Map<String, Object> workspace = new LinkedHashMap<>();
     workspace.put("configuration", true);
@@ -149,6 +160,45 @@ public final class LanguageSession {
     params.put("textDocument", document);
     params.put("position", position);
     return client.request("textDocument/completion", params).thenApply(LanguageSession::items);
+  }
+
+  /** Asks what the server knows about the symbol at a position (zero based): plain text, or empty. */
+  public CompletableFuture<String> hover(String uri, int line, int character) {
+    return client
+        .request("textDocument/hover", positionParams(uri, line, character))
+        .thenApply(LanguageSession::hoverOf);
+  }
+
+  /** Asks where the symbol at a position (zero based) is defined. */
+  public CompletableFuture<List<Location>> definition(String uri, int line, int character) {
+    return client
+        .request("textDocument/definition", positionParams(uri, line, character))
+        .thenApply(LanguageSession::locationsOf);
+  }
+
+  /** Asks how the server would format the whole document: the edits to apply, last to first. */
+  public CompletableFuture<List<TextEdit>> format(String uri, int tabSize) {
+    Map<String, Object> document = new LinkedHashMap<>();
+    document.put("uri", uri);
+    Map<String, Object> options = new LinkedHashMap<>();
+    options.put("tabSize", (long) tabSize);
+    options.put("insertSpaces", true);
+    Map<String, Object> params = new LinkedHashMap<>();
+    params.put("textDocument", document);
+    params.put("options", options);
+    return client.request("textDocument/formatting", params).thenApply(LanguageSession::editsOf);
+  }
+
+  private static Map<String, Object> positionParams(String uri, int line, int character) {
+    Map<String, Object> document = new LinkedHashMap<>();
+    document.put("uri", uri);
+    Map<String, Object> position = new LinkedHashMap<>();
+    position.put("line", (long) line);
+    position.put("character", (long) character);
+    Map<String, Object> params = new LinkedHashMap<>();
+    params.put("textDocument", document);
+    params.put("position", position);
+    return params;
   }
 
   /** Ends the conversation politely: {@code shutdown}, then {@code exit}. */
@@ -232,6 +282,116 @@ public final class LanguageSession {
         startCharacter,
         endLine,
         endCharacter);
+  }
+
+  /** The text of a hover answer: a string, MarkupContent, MarkedString or a list of those. */
+  static String hoverOf(Object result) {
+    if (!(result instanceof Map)) {
+      return "";
+    }
+    StringBuilder out = new StringBuilder();
+    addContents(((Map<?, ?>) result).get("contents"), out);
+    return out.toString().trim();
+  }
+
+  private static void addContents(Object contents, StringBuilder out) {
+    String piece = null;
+    if (contents instanceof String) {
+      piece = (String) contents;
+    } else if (contents instanceof Map) {
+      Object value = ((Map<?, ?>) contents).get("value");
+      piece = value instanceof String ? (String) value : null;
+    } else if (contents instanceof List) {
+      for (Object entry : (List<?>) contents) {
+        addContents(entry, out);
+      }
+      return;
+    }
+    if (piece == null) {
+      return;
+    }
+    StringBuilder clean = new StringBuilder();
+    for (String line : piece.split("\\r?\\n", -1)) {
+      // Code fences are Markdown decoration; the screen shows plain text.
+      if (!line.trim().startsWith("```")) {
+        clean.append(line).append('\n');
+      }
+    }
+    String text = clean.toString().trim();
+    if (!text.isEmpty()) {
+      if (out.length() > 0) {
+        out.append("\n\n");
+      }
+      out.append(text);
+    }
+  }
+
+  /** Location, Location[] or LocationLink[]; anything else gives an empty list. */
+  static List<Location> locationsOf(Object result) {
+    List<Location> found = new ArrayList<>();
+    if (result instanceof Map) {
+      addLocation((Map<?, ?>) result, found);
+    } else if (result instanceof List) {
+      for (Object entry : (List<?>) result) {
+        if (entry instanceof Map) {
+          addLocation((Map<?, ?>) entry, found);
+        }
+      }
+    }
+    return found;
+  }
+
+  private static void addLocation(Map<?, ?> map, List<Location> found) {
+    Object uri = map.get("uri");
+    Object range = map.get("range");
+    if (!(uri instanceof String)) {
+      // A LocationLink names its target instead.
+      uri = map.get("targetUri");
+      range = map.get("targetSelectionRange");
+      if (range == null) {
+        range = map.get("targetRange");
+      }
+    }
+    if (uri instanceof String && range instanceof Map) {
+      Object start = ((Map<?, ?>) range).get("start");
+      found.add(
+          new Location(
+              (String) uri, number(position(start, "line"), 0), number(position(start, "character"), 0)));
+    }
+  }
+
+  /** The edits of a formatting answer, sorted so that applying them one after the other is safe. */
+  static List<TextEdit> editsOf(Object result) {
+    List<TextEdit> edits = new ArrayList<>();
+    if (!(result instanceof List)) {
+      return edits;
+    }
+    for (Object entry : (List<?>) result) {
+      if (!(entry instanceof Map)) {
+        continue;
+      }
+      Map<?, ?> map = (Map<?, ?>) entry;
+      Object range = map.get("range");
+      if (!(range instanceof Map) || !(map.get("newText") instanceof String)) {
+        continue;
+      }
+      Map<?, ?> r = (Map<?, ?>) range;
+      edits.add(
+          new TextEdit(
+              number(position(r.get("start"), "line"), 0),
+              number(position(r.get("start"), "character"), 0),
+              number(position(r.get("end"), "line"), 0),
+              number(position(r.get("end"), "character"), 0),
+              (String) map.get("newText")));
+    }
+    // Last position first: an edit then never moves the places of those still to apply.
+    Collections.sort(
+        edits,
+        (a, b) ->
+            a.startLine() != b.startLine()
+                ? Integer.compare(b.startLine(), a.startLine())
+                : Integer.compare(b.startCharacter(), a.startCharacter()));
+    return edits;
   }
 
   static List<Diagnostic> diagnosticsOf(Object list) {
