@@ -72,6 +72,9 @@ final class TerminalEnvironment {
     env.put("ANDROID_ROOT", "/system");
     env.put("ANDROID_DATA", "/data");
     env.put("EXTERNAL_STORAGE", "/sdcard");
+    // pkg picks a random Termux mirror and rewrites apt's sources.list unless told not to. The
+    // userland trusts only the key of asm-packages, so such a mirror fails with NO_PUBKEY.
+    env.put("TERMUX_PKG_NO_MIRROR_SELECT", "1");
     for (String library : PRELOAD) {
       File file = new File(prefix, library);
       if (file.isFile()) {
