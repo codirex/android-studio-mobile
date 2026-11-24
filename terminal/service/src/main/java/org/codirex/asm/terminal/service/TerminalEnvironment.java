@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -31,6 +32,9 @@ final class TerminalEnvironment {
 
   /** The JDK Gradle builds run on (ADR-0027); it is the JAVA_HOME whenever it is installed. */
   private static final int GRADLE_JDK = 17;
+
+  private static final String BLOCK_BEGIN = "# >>> Android Studio Mobile (managed, do not edit)";
+  private static final String BLOCK_END = "# <<< Android Studio Mobile";
 
   private final File prefix;
   private final File home;
@@ -90,14 +94,76 @@ final class TerminalEnvironment {
     env.put("ANDROID_HOME", sdkRoot.getPath());
     env.put("ANDROID_SDK_ROOT", sdkRoot.getPath());
     // The aapt2 of Google is built for x86-64 and cannot run here; the one of the userland can.
-    // Gradle turns an ORG_GRADLE_PROJECT_ variable into a project property.
-    File aapt2 = new File(prefix, "bin/aapt2");
-    if (aapt2.isFile()) {
-      env.put("ORG_GRADLE_PROJECT_android.aapt2FromMavenOverride", aapt2.getPath());
-    }
+    // It is handed to Gradle through the gradle.properties of the user home, for every project.
+    syncGradleProperties();
     // The person's own variables come last, so they can change what is set above (ADR-0028).
     env.putAll(customVariables());
     return env;
+  }
+
+  /**
+   * Keeps {@code android.aapt2FromMavenOverride} in {@code ~/.gradle/gradle.properties} (the Gradle
+   * user home, so it holds for every project and nobody edits a project file). Only the block
+   * between the two markers is ours: the rest of the file is the person's and stays as it is. With
+   * no aapt2 installed the block is removed. An environment variable would not do: its name has a
+   * dot, and bash drops such variables before Gradle starts. Best effort: a failure is ignored.
+   */
+  void syncGradleProperties() {
+    File aapt2 = new File(prefix, "bin/aapt2");
+    File file = new File(home, ".gradle/gradle.properties");
+    try {
+      String current =
+          file.isFile() ? new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8) : "";
+      String rest = withoutManagedBlock(current);
+      String next = rest;
+      if (aapt2.isFile()) {
+        if (!rest.isEmpty() && !rest.endsWith("\n")) {
+          rest += "\n";
+        }
+        next =
+            rest
+                + BLOCK_BEGIN
+                + "\nandroid.aapt2FromMavenOverride="
+                + aapt2.getPath()
+                + "\n"
+                + BLOCK_END
+                + "\n";
+      }
+      if (next.equals(current)) {
+        return;
+      }
+      if (next.isEmpty()) {
+        file.delete();
+        return;
+      }
+      File parent = file.getParentFile();
+      if (!parent.isDirectory() && !parent.mkdirs()) {
+        return;
+      }
+      Files.write(file.toPath(), next.getBytes(StandardCharsets.UTF_8));
+    } catch (IOException e) {
+      // The build then fails with Gradle's own message; the terminal still starts.
+    }
+  }
+
+  /** The text without the lines from the begin marker to the end marker, both included. */
+  static String withoutManagedBlock(String text) {
+    StringBuilder kept = new StringBuilder();
+    boolean inside = false;
+    for (String line : text.split("\n", -1)) {
+      if (line.equals(BLOCK_BEGIN)) {
+        inside = true;
+      } else if (inside && line.equals(BLOCK_END)) {
+        inside = false;
+      } else if (!inside) {
+        kept.append(line).append('\n');
+      }
+    }
+    // split leaves a last empty piece after a final newline; drop the newline it added.
+    if (kept.length() > 0) {
+      kept.setLength(kept.length() - 1);
+    }
+    return kept.toString();
   }
 
   /**
