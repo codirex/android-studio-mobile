@@ -29,7 +29,8 @@ import org.codirex.asm.domain.sdk.SdkStorage;
  * {@code build-tools/34.0.0}. A package counts as installed when its folder holds the marker file
  * {@code .asm-package}, which is written last: the package is unpacked into a folder beside it and
  * moved into place, so an interrupted install leaves no half package. The licenses the person
- * accepted are files below {@code .asm/licenses}.
+ * accepted are files below {@code .asm/licenses}, and are mirrored to {@code licenses/} where the
+ * Android Gradle plugin looks for them.
  */
 final class FileSdkStorage implements SdkStorage {
 
@@ -110,7 +111,10 @@ final class FileSdkStorage implements SdkStorage {
     if (!file.isFile()) {
       return null;
     }
-    return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8).trim();
+    String hash = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8).trim();
+    // A license accepted before the Gradle files existed is carried over when it is first read.
+    mirrorForGradle(licenseId, hash);
+    return hash;
   }
 
   @Override
@@ -121,6 +125,49 @@ final class FileSdkStorage implements SdkStorage {
       throw new IOException("cannot create " + parent);
     }
     Files.write(file.toPath(), hash.getBytes(StandardCharsets.UTF_8));
+    mirrorForGradle(licenseId, hash);
+  }
+
+  /**
+   * The Android Gradle plugin reads {@code <sdk>/licenses/<id>}, one hash per line, and refuses to
+   * download or use SDK parts without it. What the person accepted in the app is written there too.
+   * {@code android-sdk-license} also gets the hash Google publishes for its current text, because
+   * the plugin compares against Google's way of hashing.
+   */
+  private void mirrorForGradle(String licenseId, String hash) throws IOException {
+    File file = new File(root, "licenses/" + licenseId);
+    List<String> lines = new ArrayList<>();
+    if (file.isFile()) {
+      for (String line :
+          new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8).split("\\R")) {
+        if (!line.trim().isEmpty()) {
+          lines.add(line.trim());
+        }
+      }
+    }
+    boolean changed = false;
+    String[] wanted =
+        "android-sdk-license".equals(licenseId)
+            ? new String[] {hash, "24333f8a63b6825ea9c5514f83c2829b004d1fee"}
+            : new String[] {hash};
+    for (String value : wanted) {
+      if (!lines.contains(value)) {
+        lines.add(value);
+        changed = true;
+      }
+    }
+    if (!changed) {
+      return;
+    }
+    File parent = file.getParentFile();
+    if (!parent.isDirectory() && !parent.mkdirs()) {
+      throw new IOException("cannot create " + parent);
+    }
+    StringBuilder text = new StringBuilder();
+    for (String line : lines) {
+      text.append(line).append('\n');
+    }
+    Files.write(file.toPath(), text.toString().getBytes(StandardCharsets.UTF_8));
   }
 
   private File licenseFile(String licenseId) throws IOException {
