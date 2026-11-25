@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dock_files">الملفات</string>
+    <string name="dock_build">بناء</string>
+    <string name="dock_terminal">الطرفية</string>
+</resources>
