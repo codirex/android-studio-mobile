@@ -32,9 +32,10 @@
     <string name="status_redo">Redo</string>
     <string name="status_position">Ln %1$d, Col %2$d</string>
     <string name="status_encoding">UTF-8</string>
-    <string name="status_java_ready">Java ready</string>
-    <string name="status_java_starting">Java starting…</string>
-    <string name="status_java_missing">Java server not installed</string>
-    <string name="status_java_failed">Java server stopped</string>
-    <string name="status_java_off">Java server off</string>
+    <string name="status_java_ready">%1$s ready</string>
+    <string name="status_java_starting">%1$s starting…</string>
+    <string name="status_java_missing">%1$s server not installed</string>
+    <string name="status_java_failed">%1$s server stopped</string>
+    <string name="status_java_off">%1$s server off</string>
+    <string name="editor_xml_server_missing">The XML language server is not installed. It gives error marks and completion for XML.</string>
 </resources>

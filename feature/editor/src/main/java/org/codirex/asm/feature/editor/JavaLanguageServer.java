@@ -22,7 +22,7 @@ import org.codirex.asm.terminal.protocol.ITerminalService;
 import org.codirex.asm.terminal.view.TerminalConnection;
 
 /**
- * The Java language server of one project, as the editor uses it (ADR-0031): it connects to the
+ * The language server of one language of one project (ADR-0031, ADR-0033: jdt.ls for Java, LemMinX for XML), as the editor uses it: it connects to the
  * terminal service, asks it to run jdt.ls, keeps the open documents in step and answers
  * completion. All methods may be called from any thread and never block for long, except {@link
  * #complete}, which waits for the server for a few seconds on the caller's (worker) thread.
@@ -30,7 +30,6 @@ import org.codirex.asm.terminal.view.TerminalConnection;
 final class JavaLanguageServer {
 
   private static final String TAG = "JavaLanguageServer";
-  private static final String LANGUAGE = "java";
   private static final long COMPLETION_TIMEOUT_SECONDS = 4;
   private static final long ANSWER_TIMEOUT_SECONDS = 10;
 
@@ -57,6 +56,7 @@ final class JavaLanguageServer {
   private final Context context;
   private final String rootUri;
   private final String workspaceKey;
+  private final String language;
   private volatile Listener listener;
   private final ExecutorService executor =
       Executors.newSingleThreadExecutor(
@@ -80,10 +80,13 @@ final class JavaLanguageServer {
   private final Map<String, String> sent = new HashMap<>();
   private final Map<String, Integer> versions = new HashMap<>();
 
-  JavaLanguageServer(Context context, File projectDirectory, String workspaceKey) {
+  /** @param language the LSP language id the service knows: {@code java} or {@code xml} */
+  JavaLanguageServer(
+      Context context, File projectDirectory, String workspaceKey, String language) {
     this.context = context.getApplicationContext();
     this.rootUri = uriOf(projectDirectory);
     this.workspaceKey = workspaceKey;
+    this.language = language;
   }
 
   /** The {@code file:///...} address of a file. */
@@ -316,7 +319,7 @@ final class JavaLanguageServer {
   private void open(ITerminalService service) {
     ParcelFileDescriptor descriptor;
     try {
-      descriptor = service.openLanguageServer(LANGUAGE, workspaceKey);
+      descriptor = service.openLanguageServer(language, workspaceKey);
     } catch (IllegalStateException e) {
       Log.w(TAG, "the server did not start: " + e.getMessage());
       boolean missing = e.getMessage() != null && e.getMessage().contains("not installed");
@@ -332,7 +335,7 @@ final class JavaLanguageServer {
             new ParcelFileDescriptor.AutoCloseInputStream(descriptor),
             new ParcelFileDescriptor.AutoCloseOutputStream(descriptor),
             rootUri,
-            initializationOptions(),
+            "java".equals(language) ? initializationOptions() : null,
             this::notifyDiagnostics);
     synchronized (lock) {
       if (state != State.STARTING) {
@@ -395,7 +398,7 @@ final class JavaLanguageServer {
       String old = sent.get(uri);
       try {
         if (old == null) {
-          current.open(uri, LANGUAGE, 1, text);
+          current.open(uri, language, 1, text);
           versions.put(uri, 1);
         } else if (!old.equals(text)) {
           int version = versions.get(uri) + 1;

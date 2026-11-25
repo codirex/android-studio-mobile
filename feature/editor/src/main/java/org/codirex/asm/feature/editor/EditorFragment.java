@@ -32,7 +32,10 @@ import io.github.rosemoe.sora.widget.schemes.SchemeGitHub;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.codirex.asm.domain.editor.SourceLanguage;
 import org.codirex.asm.domain.lsp.Diagnostic;
@@ -53,6 +56,9 @@ public final class EditorFragment extends Fragment {
   private static final long AUTO_SAVE_DELAY_MS = 1000;
   private static final long SERVER_SYNC_DELAY_MS = 400;
 
+  /** The languages that have a language server (ADR-0031, ADR-0033). */
+  private static final String[] LSP_LANGUAGES = {"java", "xml"};
+
   private final Handler handler = new Handler(Looper.getMainLooper());
   private final Runnable autoSave = this::snapshotCurrent;
 
@@ -62,14 +68,14 @@ public final class EditorFragment extends Fragment {
   /** The document whose text the editor widget holds, or null. */
   private volatile String currentPath;
 
-  /** The Java language server of the project (ADR-0031), or null before the view exists. */
-  private JavaLanguageServer javaServer;
+  /** The language servers of the project by language id (ADR-0031), empty before the view exists. */
+  private final Map<String, JavaLanguageServer> servers = new HashMap<>();
 
   /** The menu above a selection (copy, paste, definition...), or null before the view exists. */
   private SelectionMenu selectionMenu;
 
   private File projectDirectory;
-  private boolean installOffered;
+  private final Set<String> installOffered = new HashSet<>();
 
   /** The diagnostics of the shown document, as the server last said (main thread only). */
   private List<Diagnostic> diagnostics = Collections.emptyList();
@@ -177,27 +183,33 @@ public final class EditorFragment extends Fragment {
     projectDirectory =
         new File(requireContext().getFilesDir(), "projects/" + requireArguments().getString(EditorViewModel.ARG_PROJECT));
     LanguageServerHolder holder = new ViewModelProvider(this).get(LanguageServerHolder.class);
-    if (holder.java() == null) {
-      holder.setJava(
-          new JavaLanguageServer(
-              requireContext(),
-              projectDirectory,
-              workspaceKey(requireArguments().getString(EditorViewModel.ARG_PROJECT))));
-    }
-    javaServer = holder.java();
-    // The server outlives the view; its reports go to the view that is there now.
-    javaServer.setListener(
-        new JavaLanguageServer.Listener() {
-          @Override
-          public void onState(JavaLanguageServer.State state) {
-            handler.post(() -> onServerState(state));
-          }
+    servers.clear();
+    for (final String language : LSP_LANGUAGES) {
+      JavaLanguageServer server = holder.server(language);
+      if (server == null) {
+        server =
+            new JavaLanguageServer(
+                requireContext(),
+                projectDirectory,
+                workspaceKey(requireArguments().getString(EditorViewModel.ARG_PROJECT)),
+                language);
+        holder.setServer(language, server);
+      }
+      servers.put(language, server);
+      // The server outlives the view; its reports go to the view that is there now.
+      server.setListener(
+          new JavaLanguageServer.Listener() {
+            @Override
+            public void onState(JavaLanguageServer.State state) {
+              handler.post(() -> onServerState(language, state));
+            }
 
-          @Override
-          public void onDiagnostics(String uri, List<Diagnostic> found) {
-            handler.post(() -> onServerDiagnostics(uri, found));
-          }
-        });
+            @Override
+            public void onDiagnostics(String uri, List<Diagnostic> found) {
+              handler.post(() -> onServerDiagnostics(uri, found));
+            }
+          });
+    }
 
     // A new view starts empty, whatever the previous one showed. A new editor widget has no
     // language, which behaves as plain text.
@@ -257,8 +269,8 @@ public final class EditorFragment extends Fragment {
   public void onDestroyView() {
     handler.removeCallbacks(autoSave);
     handler.removeCallbacks(syncServer);
-    if (javaServer != null) {
-      javaServer.setListener(null);
+    for (JavaLanguageServer server : servers.values()) {
+      server.setListener(null);
     }
     binding.editor.unregisterDiagnosticProvider(diagnosticProvider);
     if (selectionMenu != null) {
@@ -278,14 +290,30 @@ public final class EditorFragment extends Fragment {
     viewModel.onEdited(currentPath);
     handler.removeCallbacks(autoSave);
     handler.postDelayed(autoSave, AUTO_SAVE_DELAY_MS);
-    if (isJava(currentPath)) {
+    if (serverFor(currentPath) != null) {
       handler.removeCallbacks(syncServer);
       handler.postDelayed(syncServer, SERVER_SYNC_DELAY_MS);
     }
   }
 
-  private static boolean isJava(@Nullable String path) {
-    return path != null && SourceLanguage.forPath(path) == SourceLanguage.JAVA;
+  /** The language id of the server for a file, or null if its language has none. */
+  @Nullable
+  private static String lspLanguage(@Nullable String path) {
+    if (path == null) {
+      return null;
+    }
+    SourceLanguage language = SourceLanguage.forPath(path);
+    if (language == SourceLanguage.JAVA) {
+      return "java";
+    }
+    return language == SourceLanguage.XML ? "xml" : null;
+  }
+
+  /** The server for the language of a file, or null. */
+  @Nullable
+  private JavaLanguageServer serverFor(@Nullable String path) {
+    String language = lspLanguage(path);
+    return language == null ? null : servers.get(language);
   }
 
   private String uriOf(String relativePath) {
@@ -300,22 +328,28 @@ public final class EditorFragment extends Fragment {
   /** Sends the live text of the shown Java file to the server (a moment after the last edit). */
   private void syncServerNow() {
     String path = currentPath;
-    if (binding != null && javaServer != null && isJava(path)) {
-      javaServer.documentChanged(uriOf(path), binding.editor.getText().toString());
+    JavaLanguageServer server = serverFor(path);
+    if (binding != null && server != null) {
+      server.documentChanged(uriOf(path), binding.editor.getText().toString());
     }
   }
 
-  private void onServerState(JavaLanguageServer.State state) {
+  private void onServerState(String language, JavaLanguageServer.State state) {
     if (binding == null) {
       return;
     }
     updateStatus();
-    if (state == JavaLanguageServer.State.MISSING && !installOffered) {
-      installOffered = true;
-      Snackbar.make(binding.getRoot(), R.string.editor_java_server_missing, Snackbar.LENGTH_INDEFINITE)
+    if (state == JavaLanguageServer.State.MISSING && installOffered.add(language)) {
+      final String pack = "xml".equals(language) ? "lemminx" : "jdtls";
+      Snackbar.make(
+              binding.getRoot(),
+              "xml".equals(language)
+                  ? R.string.editor_xml_server_missing
+                  : R.string.editor_java_server_missing,
+              Snackbar.LENGTH_INDEFINITE)
           .setAction(
               R.string.editor_java_server_install,
-              v -> ((EditorNavigator) requireActivity()).installPackage("jdtls"))
+              v -> ((EditorNavigator) requireActivity()).installPackage(pack))
           .show();
     }
     if (state == JavaLanguageServer.State.READY) {
@@ -369,9 +403,8 @@ public final class EditorFragment extends Fragment {
 
   /** Whether the language server of the shown file can answer (Definition, Info, Format). */
   private boolean codeActionsAvailable() {
-    return javaServer != null
-        && javaServer.state() == JavaLanguageServer.State.READY
-        && isJava(currentPath);
+    JavaLanguageServer server = serverFor(currentPath);
+    return server != null && server.state() == JavaLanguageServer.State.READY;
   }
 
   /**
@@ -498,9 +531,10 @@ public final class EditorFragment extends Fragment {
             R.string.status_position,
             binding.editor.getCursor().getLeftLine() + 1,
             binding.editor.getCursor().getLeftColumn() + 1));
-    if (isJava(currentPath) && javaServer != null) {
+    JavaLanguageServer fileServer = serverFor(currentPath);
+    if (fileServer != null) {
       int label;
-      switch (javaServer.state()) {
+      switch (fileServer.state()) {
         case READY:
           label = R.string.status_java_ready;
           break;
@@ -517,7 +551,8 @@ public final class EditorFragment extends Fragment {
           label = R.string.status_java_off;
           break;
       }
-      binding.statusServer.setText(label);
+      binding.statusServer.setText(
+          getString(label, "xml".equals(lspLanguage(currentPath)) ? "XML" : "Java"));
     } else {
       binding.statusServer.setText("");
     }
@@ -566,8 +601,8 @@ public final class EditorFragment extends Fragment {
   /** Goes to the definition of the symbol at the caret. */
   private void goToDefinition() {
     final String path = currentPath;
-    final JavaLanguageServer server = javaServer;
-    if (binding == null || server == null || !isJava(path)) {
+    final JavaLanguageServer server = serverFor(path);
+    if (binding == null || server == null) {
       return;
     }
     final String text = binding.editor.getText().toString();
@@ -607,8 +642,8 @@ public final class EditorFragment extends Fragment {
   /** Shows what the server says about the symbol at the caret. */
   private void showHover() {
     final String path = currentPath;
-    final JavaLanguageServer server = javaServer;
-    if (binding == null || server == null || !isJava(path)) {
+    final JavaLanguageServer server = serverFor(path);
+    if (binding == null || server == null) {
       return;
     }
     final String text = binding.editor.getText().toString();
@@ -642,8 +677,8 @@ public final class EditorFragment extends Fragment {
   /** Formats the shown Java file the way the server does. */
   private void formatDocument() {
     final String path = currentPath;
-    final JavaLanguageServer server = javaServer;
-    if (binding == null || server == null || !isJava(path)) {
+    final JavaLanguageServer server = serverFor(path);
+    if (binding == null || server == null) {
       return;
     }
     final String text = binding.editor.getText().toString();
@@ -722,9 +757,10 @@ public final class EditorFragment extends Fragment {
       binding.editor.setText(state.shownText());
       diagnostics = Collections.emptyList();
       binding.editor.invalidateDiagnostics();
-      if (isJava(state.shownPath()) && javaServer != null) {
-        javaServer.start();
-        javaServer.documentChanged(uriOf(state.shownPath()), state.shownText().toString());
+      JavaLanguageServer shownServer = serverFor(state.shownPath());
+      if (shownServer != null) {
+        shownServer.start();
+        shownServer.documentChanged(uriOf(state.shownPath()), state.shownText().toString());
       }
     }
     // A rename changes the shown path without changing the text, so follow it here.
@@ -754,15 +790,15 @@ public final class EditorFragment extends Fragment {
   @Nullable
   private Language languageFor(SourceLanguage language) {
     Language base = TextMateSetup.languageFor(language);
-    if (base == null || language != SourceLanguage.JAVA) {
+    if (base == null || (language != SourceLanguage.JAVA && language != SourceLanguage.XML)) {
       return base;
     }
     return new ServerLanguage(
         base,
         (text, line, column) -> {
           String path = currentPath;
-          JavaLanguageServer server = javaServer;
-          if (path == null || server == null || !isJava(path)) {
+          JavaLanguageServer server = serverFor(path);
+          if (path == null || server == null) {
             return null;
           }
           return server.complete(uriOf(path), text, line, column);
@@ -776,11 +812,10 @@ public final class EditorFragment extends Fragment {
       selectTab(paths.indexOf(active));
       return;
     }
-    if (javaServer != null) {
-      for (String old : renderedPaths) {
-        if (!paths.contains(old) && isJava(old)) {
-          javaServer.documentClosed(uriOf(old));
-        }
+    for (String old : renderedPaths) {
+      JavaLanguageServer closing = serverFor(old);
+      if (closing != null && !paths.contains(old)) {
+        closing.documentClosed(uriOf(old));
       }
     }
     renderedPaths = paths;

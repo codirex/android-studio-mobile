@@ -27,23 +27,37 @@ final class LanguageServerLauncher {
     this.prefix = org.codirex.asm.terminal.bootstrap.BootstrapInstaller.prefixOf(filesDirectory);
   }
 
+  /** The program of a language's server, or null for a language without one. */
+  private static String programOf(String language) {
+    if ("java".equals(language)) {
+      return "jdtls";
+    }
+    if ("xml".equals(language)) {
+      return "lemminx";
+    }
+    return null;
+  }
+
   /** The command for a language and a workspace key; null for a language without a server. */
   List<String> command(String language, String workspaceKey) throws IOException {
-    if (!"java".equals(language)) {
+    String program = programOf(language);
+    if (program == null) {
       return null;
     }
     if (!isValidKey(workspaceKey)) {
       throw new IOException("bad workspace key");
     }
-    File script = new File(prefix, "bin/jdtls");
+    File script = new File(prefix, "bin/" + program);
     if (!script.isFile()) {
       throw new IOException("the language server is not installed: no " + script);
     }
-    File data = new File(environment.home(), ".cache/jdtls/workspace-" + workspaceKey);
     List<String> command = new ArrayList<>();
     command.add(new File(prefix, "bin/sh").getPath());
     command.add(script.getPath());
-    command.add(data.getPath());
+    if ("java".equals(language)) {
+      // jdt.ls keeps its data per workspace; lemminx keeps none.
+      command.add(new File(environment.home(), ".cache/jdtls/workspace-" + workspaceKey).getPath());
+    }
     return command;
   }
 
@@ -57,7 +71,7 @@ final class LanguageServerLauncher {
       throw new IOException("no language server for " + language);
     }
     File home = environment.home();
-    File logs = new File(home, ".cache/jdtls");
+    File logs = new File(home, ".cache/" + programOf(language));
     if (!logs.isDirectory() && !logs.mkdirs()) {
       throw new IOException("cannot create " + logs);
     }

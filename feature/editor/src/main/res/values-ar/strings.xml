@@ -32,9 +32,10 @@
     <string name="status_redo">إعادة</string>
     <string name="status_position">س %1$d، ع %2$d</string>
     <string name="status_encoding">UTF-8</string>
-    <string name="status_java_ready">Java جاهز</string>
-    <string name="status_java_starting">Java يبدأ…</string>
-    <string name="status_java_missing">خادم Java غير مثبّت</string>
-    <string name="status_java_failed">توقّف خادم Java</string>
-    <string name="status_java_off">خادم Java متوقف</string>
+    <string name="status_java_ready">%1$s جاهز</string>
+    <string name="status_java_starting">%1$s يبدأ…</string>
+    <string name="status_java_missing">خادم %1$s غير مثبّت</string>
+    <string name="status_java_failed">توقّف خادم %1$s</string>
+    <string name="status_java_off">خادم %1$s متوقف</string>
+    <string name="editor_xml_server_missing">خادم لغة XML غير مثبّت. يوفّر علامات الأخطاء والإكمال لملفات XML.</string>
 </resources>
