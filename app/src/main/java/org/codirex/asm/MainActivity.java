@@ -72,6 +72,10 @@ public final class MainActivity extends AppCompatActivity
     if (terminal != null) {
       terminal.setVisible(workspace() != null);
     }
+    MenuItem run = menu.findItem(R.id.action_run);
+    if (run != null) {
+      run.setVisible(workspace() != null);
+    }
     // Gradle tasks run in the folder of the open project, like the terminal.
     MenuItem gradle = menu.findItem(R.id.action_gradle);
     if (gradle != null) {
@@ -105,6 +109,10 @@ public final class MainActivity extends AppCompatActivity
   public boolean onOptionsItemSelected(MenuItem item) {
     if (item.getItemId() == R.id.action_terminal) {
       showTerminal();
+      return true;
+    }
+    if (item.getItemId() == R.id.action_run) {
+      runProject();
       return true;
     }
     if (item.getItemId() == R.id.action_gradle) {
@@ -322,6 +330,22 @@ public final class MainActivity extends AppCompatActivity
     }
   }
 
+  /** The Run button: builds the debug APK of the open project on the build screen. */
+  private void runProject() {
+    GradleTask chosen = null;
+    for (GradleTask task : GradleTask.common()) {
+      if (task.name().equals("assembleDebug")) {
+        chosen = task;
+        break;
+      }
+    }
+    if (chosen != null) {
+      runGradle(chosen);
+    } else {
+      showGradleTasks();
+    }
+  }
+
   /** The open project's workspace, or null when another screen is shown. */
   private WorkspaceFragment workspace() {
     Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
@@ -332,6 +356,8 @@ public final class MainActivity extends AppCompatActivity
     ActionBar bar = getSupportActionBar();
     if (bar != null) {
       bar.setDisplayHomeAsUpEnabled(getSupportFragmentManager().getBackStackEntryCount() > 0);
+      WorkspaceFragment open = workspace();
+      bar.setTitle(open != null ? open.project().value() : getString(R.string.app_name));
     }
     invalidateOptionsMenu();
   }
