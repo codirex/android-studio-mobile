@@ -225,6 +225,7 @@ public final class EditorFragment extends Fragment {
         v -> ((EditorNavigator) requireActivity()).showFileTree());
     setUpSelectionMenu();
     setUpStatusLine();
+    setUpQuickKeys();
     binding.tabs.addOnTabSelectedListener(
         new TabLayout.OnTabSelectedListener() {
           @Override
@@ -486,6 +487,9 @@ public final class EditorFragment extends Fragment {
     int visibility = shown ? View.VISIBLE : View.GONE;
     binding.statusBar.setVisibility(visibility);
     binding.statusDivider.setVisibility(visibility);
+    binding.quickKeysScroll.setVisibility(visibility);
+    binding.breadcrumb.setVisibility(visibility);
+    binding.breadcrumb.setText(shown ? currentPath.replace("/", "  \u203A  ") : "");
     if (!shown) {
       return;
     }
@@ -529,6 +533,28 @@ public final class EditorFragment extends Fragment {
     binding.undo.setAlpha(canUndo ? 1f : 0.38f);
     binding.redo.setEnabled(canRedo);
     binding.redo.setAlpha(canRedo ? 1f : 0.38f);
+  }
+
+  /** The symbols that are slow to reach on a phone keyboard; Tab inserts four spaces. */
+  private void setUpQuickKeys() {
+    String[] keys = {
+      "Tab", "{", "}", "(", ")", "[", "]", ";", "\"", "'", "=", "<", ">", "/", "!", ".", ","
+    };
+    LayoutInflater inflater = getLayoutInflater();
+    for (String key : keys) {
+      android.widget.TextView view =
+          (android.widget.TextView)
+              inflater.inflate(R.layout.item_quick_key, binding.quickKeys, false);
+      view.setText(key);
+      final String text = key.equals("Tab") ? "    " : key;
+      view.setOnClickListener(
+          v -> {
+            if (binding != null && currentPath != null) {
+              binding.editor.insertText(text, text.length());
+            }
+          });
+      binding.quickKeys.addView(view);
+    }
   }
 
   private void say(int message) {
