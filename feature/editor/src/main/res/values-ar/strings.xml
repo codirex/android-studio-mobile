@@ -22,4 +22,9 @@
     <string name="editor_java_not_available">لم يرد خادم اللغة.</string>
     <string name="editor_java_already_formatted">الملف منسّق بالفعل.</string>
     <string name="editor_java_text_changed">تغيّر النص أثناء التنسيق؛ حاول مرة أخرى.</string>
+
+    <string name="editor_action_cut">قص</string>
+    <string name="editor_action_copy">نسخ</string>
+    <string name="editor_action_paste">لصق</string>
+    <string name="editor_action_select_all">تحديد الكل</string>
 </resources>

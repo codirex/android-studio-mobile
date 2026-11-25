@@ -17,6 +17,8 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 import dagger.hilt.android.AndroidEntryPoint;
 import io.github.rosemoe.sora.event.ContentChangeEvent;
+import io.github.rosemoe.sora.event.ScrollEvent;
+import io.github.rosemoe.sora.event.SelectionChangeEvent;
 import io.github.rosemoe.sora.lang.diagnostic.DiagnosticDetail;
 import io.github.rosemoe.sora.lang.diagnostic.DiagnosticProvider;
 import io.github.rosemoe.sora.lang.diagnostic.DiagnosticRegion;
@@ -24,6 +26,7 @@ import io.github.rosemoe.sora.lang.diagnostic.DiagnosticsContainer;
 import io.github.rosemoe.sora.lang.Language;
 import io.github.rosemoe.sora.langs.textmate.TextMateColorScheme;
 import io.github.rosemoe.sora.langs.textmate.registry.ThemeRegistry;
+import io.github.rosemoe.sora.widget.component.EditorTextActionWindow;
 import io.github.rosemoe.sora.widget.schemes.SchemeDarcula;
 import io.github.rosemoe.sora.widget.schemes.SchemeGitHub;
 import java.io.File;
@@ -61,6 +64,9 @@ public final class EditorFragment extends Fragment {
 
   /** The Java language server of the project (ADR-0031), or null before the view exists. */
   private JavaLanguageServer javaServer;
+
+  /** The menu above a selection (copy, paste, definition...), or null before the view exists. */
+  private SelectionMenu selectionMenu;
 
   private File projectDirectory;
   private boolean installOffered;
@@ -217,9 +223,7 @@ public final class EditorFragment extends Fragment {
 
     binding.showFiles.setOnClickListener(
         v -> ((EditorNavigator) requireActivity()).showFileTree());
-    binding.javaDefinition.setOnClickListener(v -> goToDefinition());
-    binding.javaHover.setOnClickListener(v -> showHover());
-    binding.javaFormat.setOnClickListener(v -> formatDocument());
+    setUpSelectionMenu();
     binding.tabs.addOnTabSelectedListener(
         new TabLayout.OnTabSelectedListener() {
           @Override
@@ -255,6 +259,10 @@ public final class EditorFragment extends Fragment {
       javaServer.setListener(null);
     }
     binding.editor.unregisterDiagnosticProvider(diagnosticProvider);
+    if (selectionMenu != null) {
+      selectionMenu.dismiss();
+      selectionMenu = null;
+    }
     binding.editor.release();
     binding = null;
     super.onDestroyView();
@@ -299,7 +307,6 @@ public final class EditorFragment extends Fragment {
     if (binding == null) {
       return;
     }
-    updateJavaTools();
     if (state == JavaLanguageServer.State.MISSING && !installOffered) {
       installOffered = true;
       Snackbar.make(binding.getRoot(), R.string.editor_java_server_missing, Snackbar.LENGTH_INDEFINITE)
@@ -357,13 +364,95 @@ public final class EditorFragment extends Fragment {
     container.addDiagnostics(regions);
   }
 
-  /** The buttons for definition, information and format: only for Java with a ready server. */
-  private void updateJavaTools() {
-    boolean ready =
-        javaServer != null
-            && javaServer.state() == JavaLanguageServer.State.READY
-            && isJava(currentPath);
-    binding.javaTools.setVisibility(ready ? View.VISIBLE : View.GONE);
+  /** Whether the language server of the shown file can answer (Definition, Info, Format). */
+  private boolean codeActionsAvailable() {
+    return javaServer != null
+        && javaServer.state() == JavaLanguageServer.State.READY
+        && isJava(currentPath);
+  }
+
+  /**
+   * Replaces the editor's own selection window with {@link SelectionMenu}: the usual text actions
+   * and, when the server of the file is ready, Definition, Info and Format. It appears after a long
+   * press that selects text, and goes away when the selection ends, the text changes or the editor
+   * scrolls.
+   */
+  private void setUpSelectionMenu() {
+    binding.editor.getComponent(EditorTextActionWindow.class).setEnabled(false);
+    selectionMenu =
+        new SelectionMenu(
+            requireContext(),
+            new SelectionMenu.Actions() {
+              @Override
+              public void cut() {
+                if (binding != null) {
+                  binding.editor.cutText();
+                }
+              }
+
+              @Override
+              public void copy() {
+                if (binding != null) {
+                  binding.editor.copyText();
+                }
+              }
+
+              @Override
+              public void paste() {
+                if (binding != null) {
+                  binding.editor.pasteText();
+                }
+              }
+
+              @Override
+              public void selectAll() {
+                if (binding != null) {
+                  binding.editor.selectAll();
+                }
+              }
+
+              @Override
+              public void definition() {
+                goToDefinition();
+              }
+
+              @Override
+              public void info() {
+                showHover();
+              }
+
+              @Override
+              public void format() {
+                formatDocument();
+              }
+            });
+    binding.editor.subscribeAlways(SelectionChangeEvent.class, this::onSelectionChanged);
+    binding.editor.subscribeAlways(ScrollEvent.class, event -> hideSelectionMenu());
+  }
+
+  private void hideSelectionMenu() {
+    if (selectionMenu != null) {
+      selectionMenu.dismiss();
+    }
+  }
+
+  private void onSelectionChanged(SelectionChangeEvent event) {
+    if (binding == null || selectionMenu == null) {
+      return;
+    }
+    if (!binding.editor.getCursor().isSelected()) {
+      hideSelectionMenu();
+      return;
+    }
+    // Only a long press (or dragging the handles after one) opens the menu; code and search that
+    // move the selection do not.
+    if (event.getCause() == SelectionChangeEvent.CAUSE_LONG_PRESS) {
+      selectionMenu.show(
+          binding.editor,
+          binding.editor.getCursor().getLeftLine(),
+          binding.editor.getCursor().getLeftColumn(),
+          codeActionsAvailable());
+    }
   }
 
   private void say(int message) {
@@ -542,7 +631,7 @@ public final class EditorFragment extends Fragment {
     boolean loading = shown != null && state.isLoading(shown);
     binding.editor.setEditable(shown != null && !loading);
     binding.progress.setVisibility(loading ? View.VISIBLE : View.GONE);
-    updateJavaTools();
+    hideSelectionMenu();
     if (!loading) {
       applyPendingLine();
     }

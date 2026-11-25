@@ -22,4 +22,9 @@
     <string name="editor_java_not_available">The language server did not answer.</string>
     <string name="editor_java_already_formatted">Already formatted.</string>
     <string name="editor_java_text_changed">The text changed while formatting; try again.</string>
+
+    <string name="editor_action_cut">Cut</string>
+    <string name="editor_action_copy">Copy</string>
+    <string name="editor_action_paste">Paste</string>
+    <string name="editor_action_select_all">Select all</string>
 </resources>
