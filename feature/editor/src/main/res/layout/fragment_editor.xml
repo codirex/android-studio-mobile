@@ -73,4 +73,72 @@
             android:visibility="gone" />
     </FrameLayout>
 
+    <View
+        android:id="@+id/status_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/colorOutlineVariant"
+        android:visibility="gone" />
+
+    <!-- Undo/redo at the start; the language server state, caret position and encoding at the end. -->
+    <LinearLayout
+        android:id="@+id/status_bar"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="?attr/colorSurfaceContainerLow"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="12dp"
+        android:visibility="gone">
+
+        <ImageButton
+            android:id="@+id/undo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/status_undo"
+            android:src="@drawable/ic_status_undo" />
+
+        <ImageButton
+            android:id="@+id/redo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/status_redo"
+            android:src="@drawable/ic_status_redo" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/status_server"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:textAppearance="@style/TextAppearance.Asm.CodeSmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <TextView
+            android:id="@+id/status_position"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:singleLine="true"
+            android:textAppearance="@style/TextAppearance.Asm.CodeSmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <TextView
+            android:id="@+id/status_encoding"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:singleLine="true"
+            android:text="@string/status_encoding"
+            android:textAppearance="@style/TextAppearance.Asm.CodeSmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+    </LinearLayout>
+
 </LinearLayout>
