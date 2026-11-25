@@ -266,7 +266,7 @@ public final class MainActivity extends AppCompatActivity
   }
 
   /** Opens a terminal in the folder of the open project (ADR-0012: files/projects/&lt;name&gt;). */
-  private void showTerminal() {
+  void showTerminal() {
     WorkspaceFragment workspace = workspace();
     if (workspace == null) {
       return;
@@ -283,7 +283,7 @@ public final class MainActivity extends AppCompatActivity
    * Offers the common Gradle tasks of the open project and runs the chosen one on the build screen,
    * which shows the parsed output (ADR-0032).
    */
-  private void showGradleTasks() {
+  void showGradleTasks() {
     if (workspace() == null) {
       return;
     }

@@ -26,6 +26,7 @@ public final class WorkspaceFragment extends Fragment {
   private static final String ARG_PROJECT = "project";
 
   private FragmentWorkspaceBinding binding;
+  private android.view.ViewTreeObserver.OnGlobalLayoutListener keyboardListener;
 
   public static WorkspaceFragment newInstance(ProjectName project) {
     Bundle arguments = new Bundle();
@@ -61,6 +62,26 @@ public final class WorkspaceFragment extends Fragment {
           .commit();
     }
 
+    binding.dockFiles.setOnClickListener(v -> showFiles());
+    binding.dockBuild.setOnClickListener(
+        v -> ((MainActivity) requireActivity()).showGradleTasks());
+    binding.dockTerminal.setOnClickListener(v -> ((MainActivity) requireActivity()).showTerminal());
+    // The dock gives its room back to the code while the keyboard is open.
+    keyboardListener =
+        () -> {
+          if (binding == null) {
+            return;
+          }
+          android.graphics.Rect frame = new android.graphics.Rect();
+          binding.getRoot().getWindowVisibleDisplayFrame(frame);
+          int covered = binding.getRoot().getRootView().getHeight() - frame.bottom;
+          boolean keyboard = covered > Math.round(150 * getResources().getDisplayMetrics().density);
+          int visibility = keyboard ? View.GONE : View.VISIBLE;
+          binding.dock.setVisibility(visibility);
+          binding.dockDivider.setVisibility(visibility);
+        };
+    binding.getRoot().getViewTreeObserver().addOnGlobalLayoutListener(keyboardListener);
+
     // The back button closes the drawer first, and only then leaves the project.
     final OnBackPressedCallback closeDrawer =
         new OnBackPressedCallback(false) {
@@ -88,6 +109,13 @@ public final class WorkspaceFragment extends Fragment {
 
   @Override
   public void onDestroyView() {
+    if (keyboardListener != null) {
+      android.view.ViewTreeObserver observer = binding.getRoot().getViewTreeObserver();
+      if (observer.isAlive()) {
+        observer.removeOnGlobalLayoutListener(keyboardListener);
+      }
+      keyboardListener = null;
+    }
     binding = null;
     super.onDestroyView();
   }
