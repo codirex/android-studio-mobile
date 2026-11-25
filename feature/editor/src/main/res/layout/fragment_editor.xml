@@ -42,6 +42,21 @@
         android:layout_height="1dp"
         android:background="?attr/colorOutlineVariant" />
 
+    <!-- The path of the shown file inside the project. -->
+    <TextView
+        android:id="@+id/breadcrumb"
+        android:layout_width="match_parent"
+        android:layout_height="28dp"
+        android:background="?attr/colorSurfaceContainerLowest"
+        android:ellipsize="start"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:singleLine="true"
+        android:textAppearance="@style/TextAppearance.Asm.CodeSmall"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:visibility="gone" />
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -79,6 +94,23 @@
         android:layout_height="1dp"
         android:background="?attr/colorOutlineVariant"
         android:visibility="gone" />
+
+    <!-- Quick keys: symbols that are slow to reach on a phone keyboard. Built in code. -->
+    <HorizontalScrollView
+        android:id="@+id/quick_keys_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="?attr/colorSurfaceContainer"
+        android:overScrollMode="never"
+        android:scrollbars="none"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/quick_keys"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
 
     <!-- Undo/redo at the start; the language server state, caret position and encoding at the end. -->
     <LinearLayout

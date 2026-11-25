@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A key of the quick key bar. A TextView, so a tap never takes the focus (and the keyboard) from the editor. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="false"
+    android:gravity="center"
+    android:minWidth="40dp"
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp"
+    android:textAppearance="@style/TextAppearance.Asm.Code"
+    android:textColor="?attr/colorOnSurface" />
