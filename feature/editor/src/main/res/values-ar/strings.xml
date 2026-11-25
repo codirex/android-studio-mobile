@@ -27,4 +27,14 @@
     <string name="editor_action_copy">نسخ</string>
     <string name="editor_action_paste">لصق</string>
     <string name="editor_action_select_all">تحديد الكل</string>
+
+    <string name="status_undo">تراجع</string>
+    <string name="status_redo">إعادة</string>
+    <string name="status_position">س %1$d، ع %2$d</string>
+    <string name="status_encoding">UTF-8</string>
+    <string name="status_java_ready">Java جاهز</string>
+    <string name="status_java_starting">Java يبدأ…</string>
+    <string name="status_java_missing">خادم Java غير مثبّت</string>
+    <string name="status_java_failed">توقّف خادم Java</string>
+    <string name="status_java_off">خادم Java متوقف</string>
 </resources>

@@ -224,6 +224,7 @@ public final class EditorFragment extends Fragment {
     binding.showFiles.setOnClickListener(
         v -> ((EditorNavigator) requireActivity()).showFileTree());
     setUpSelectionMenu();
+    setUpStatusLine();
     binding.tabs.addOnTabSelectedListener(
         new TabLayout.OnTabSelectedListener() {
           @Override
@@ -307,6 +308,7 @@ public final class EditorFragment extends Fragment {
     if (binding == null) {
       return;
     }
+    updateStatus();
     if (state == JavaLanguageServer.State.MISSING && !installOffered) {
       installOffered = true;
       Snackbar.make(binding.getRoot(), R.string.editor_java_server_missing, Snackbar.LENGTH_INDEFINITE)
@@ -453,6 +455,80 @@ public final class EditorFragment extends Fragment {
           binding.editor.getCursor().getLeftColumn(),
           codeActionsAvailable());
     }
+  }
+
+  /** Undo/redo buttons, and the language server state, caret position and encoding at the bottom. */
+  private void setUpStatusLine() {
+    binding.undo.setOnClickListener(
+        v -> {
+          if (binding != null) {
+            binding.editor.undo();
+          }
+        });
+    binding.redo.setOnClickListener(
+        v -> {
+          if (binding != null) {
+            binding.editor.redo();
+          }
+        });
+    binding.editor.subscribeAlways(SelectionChangeEvent.class, event -> updateStatus());
+    binding.editor.subscribeAlways(ContentChangeEvent.class, event -> updateUndoRedo());
+    updateStatus();
+    updateUndoRedo();
+  }
+
+  /** Shows the bar only while a file is shown, with the caret position and the server state. */
+  private void updateStatus() {
+    if (binding == null) {
+      return;
+    }
+    boolean shown = currentPath != null;
+    int visibility = shown ? View.VISIBLE : View.GONE;
+    binding.statusBar.setVisibility(visibility);
+    binding.statusDivider.setVisibility(visibility);
+    if (!shown) {
+      return;
+    }
+    binding.statusPosition.setText(
+        getString(
+            R.string.status_position,
+            binding.editor.getCursor().getLeftLine() + 1,
+            binding.editor.getCursor().getLeftColumn() + 1));
+    if (isJava(currentPath) && javaServer != null) {
+      int label;
+      switch (javaServer.state()) {
+        case READY:
+          label = R.string.status_java_ready;
+          break;
+        case MISSING:
+          label = R.string.status_java_missing;
+          break;
+        case FAILED:
+          label = R.string.status_java_failed;
+          break;
+        case STARTING:
+          label = R.string.status_java_starting;
+          break;
+        default:
+          label = R.string.status_java_off;
+          break;
+      }
+      binding.statusServer.setText(label);
+    } else {
+      binding.statusServer.setText("");
+    }
+  }
+
+  private void updateUndoRedo() {
+    if (binding == null) {
+      return;
+    }
+    boolean canUndo = currentPath != null && binding.editor.canUndo();
+    boolean canRedo = currentPath != null && binding.editor.canRedo();
+    binding.undo.setEnabled(canUndo);
+    binding.undo.setAlpha(canUndo ? 1f : 0.38f);
+    binding.redo.setEnabled(canRedo);
+    binding.redo.setAlpha(canRedo ? 1f : 0.38f);
   }
 
   private void say(int message) {
@@ -632,6 +708,8 @@ public final class EditorFragment extends Fragment {
     binding.editor.setEditable(shown != null && !loading);
     binding.progress.setVisibility(loading ? View.VISIBLE : View.GONE);
     hideSelectionMenu();
+    updateStatus();
+    updateUndoRedo();
     if (!loading) {
       applyPendingLine();
     }

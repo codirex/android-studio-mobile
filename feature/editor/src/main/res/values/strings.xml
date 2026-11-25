@@ -27,4 +27,14 @@
     <string name="editor_action_copy">Copy</string>
     <string name="editor_action_paste">Paste</string>
     <string name="editor_action_select_all">Select all</string>
+
+    <string name="status_undo">Undo</string>
+    <string name="status_redo">Redo</string>
+    <string name="status_position">Ln %1$d, Col %2$d</string>
+    <string name="status_encoding">UTF-8</string>
+    <string name="status_java_ready">Java ready</string>
+    <string name="status_java_starting">Java starting…</string>
+    <string name="status_java_missing">Java server not installed</string>
+    <string name="status_java_failed">Java server stopped</string>
+    <string name="status_java_off">Java server off</string>
 </resources>
