@@ -1,0 +1,91 @@
+  /** Whether the language server of the shown file can answer (Definition, Info, Format). */
+  private boolean codeActionsAvailable() {
+    return javaServer != null
+        && javaServer.state() == JavaLanguageServer.State.READY
+        && isJava(currentPath);
+  }
+
+  /**
+   * Replaces the editor's own selection window with {@link SelectionMenu}: the usual text actions
+   * and, when the server of the file is ready, Definition, Info and Format. It appears after a long
+   * press that selects text, and goes away when the selection ends, the text changes or the editor
+   * scrolls.
+   */
+  private void setUpSelectionMenu() {
+    binding.editor.getComponent(EditorTextActionWindow.class).setEnabled(false);
+    selectionMenu =
+        new SelectionMenu(
+            requireContext(),
+            new SelectionMenu.Actions() {
+              @Override
+              public void cut() {
+                if (binding != null) {
+                  binding.editor.cutText();
+                }
+              }
+
+              @Override
+              public void copy() {
+                if (binding != null) {
+                  binding.editor.copyText();
+                }
+              }
+
+              @Override
+              public void paste() {
+                if (binding != null) {
+                  binding.editor.pasteText();
+                }
+              }
+
+              @Override
+              public void selectAll() {
+                if (binding != null) {
+                  binding.editor.selectAll();
+                }
+              }
+
+              @Override
+              public void definition() {
+                goToDefinition();
+              }
+
+              @Override
+              public void info() {
+                showHover();
+              }
+
+              @Override
+              public void format() {
+                formatDocument();
+              }
+            });
+    binding.editor.subscribeAlways(SelectionChangeEvent.class, this::onSelectionChanged);
+    binding.editor.subscribeAlways(ScrollEvent.class, event -> hideSelectionMenu());
+  }
+
+  private void hideSelectionMenu() {
+    if (selectionMenu != null) {
+      selectionMenu.dismiss();
+    }
+  }
+
+  private void onSelectionChanged(SelectionChangeEvent event) {
+    if (binding == null || selectionMenu == null) {
+      return;
+    }
+    if (!binding.editor.getCursor().isSelected()) {
+      hideSelectionMenu();
+      return;
+    }
+    // Only a long press (or dragging the handles after one) opens the menu; code and search that
+    // move the selection do not.
+    if (event.getCause() == SelectionChangeEvent.CAUSE_LONG_PRESS) {
+      selectionMenu.show(
+          binding.editor,
+          binding.editor.getCursor().getLeftLine(),
+          binding.editor.getCursor().getLeftColumn(),
+          codeActionsAvailable());
+    }
+  }
+
