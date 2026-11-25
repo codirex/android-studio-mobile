@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Design tokens (Figma file "ASM", Foundations). Dark is the primary look. -->
+    <color name="asm_dark_base">#0E1116</color>
+    <color name="asm_dark_surface">#151A21</color>
+    <color name="asm_dark_raised">#1C222B</color>
+    <color name="asm_dark_overlay">#242B36</color>
+    <color name="asm_dark_text">#E6EAF0</color>
+    <color name="asm_dark_text_muted">#9AA6B5</color>
+    <color name="asm_dark_outline">#3A4452</color>
+    <color name="asm_dark_outline_variant">#2A323E</color>
+
+    <color name="asm_accent">#3DDC84</color>
+    <color name="asm_accent_on">#04210F</color>
+    <color name="asm_accent_soft">#173A2A</color>
+    <color name="asm_error">#FF6B6B</color>
+    <color name="asm_warning">#FFC247</color>
+    <color name="asm_info">#5AB0FF</color>
+
+    <color name="asm_light_base">#F7F9FB</color>
+    <color name="asm_light_text">#12161C</color>
+    <color name="asm_light_text_muted">#4A5563</color>
+    <color name="asm_light_accent">#0B7A43</color>
+    <color name="asm_light_accent_soft">#CFF5DF</color>
+</resources>

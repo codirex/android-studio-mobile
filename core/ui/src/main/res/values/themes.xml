@@ -2,10 +2,70 @@
 <resources>
 
     <!--
-        The app theme. Follows the system light/dark setting. On Android 12 and newer the colors
-        come from the wallpaper (see AsmApplication); older versions use the Material 3 baseline.
-        The brand palette and the editor color schemes are a later decision (ADR-0010).
+        The app theme (light). The dark counterpart is in values-night. Both carry the palette of
+        the design (ADR-0034); Material 3 components pick the colors up through the theme attributes.
     -->
-    <style name="Theme.Asm" parent="Theme.Material3.DayNight.NoActionBar" />
+    <style name="Theme.Asm" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/asm_light_accent</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">@color/asm_light_accent_soft</item>
+        <item name="colorOnPrimaryContainer">@color/asm_accent_on</item>
+        <item name="colorSecondary">#4F6B5C</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#D2E8DA</item>
+        <item name="colorOnSecondaryContainer">#0B1F15</item>
+        <item name="colorTertiary">#0B62B0</item>
+        <item name="colorOnTertiary">#FFFFFF</item>
+        <item name="colorError">#BA1A1A</item>
+        <item name="colorOnError">#FFFFFF</item>
+
+        <item name="android:colorBackground">@color/asm_light_base</item>
+        <item name="colorSurface">@color/asm_light_base</item>
+        <item name="colorOnBackground">@color/asm_light_text</item>
+        <item name="colorOnSurface">@color/asm_light_text</item>
+        <item name="colorSurfaceVariant">#E5E9EE</item>
+        <item name="colorOnSurfaceVariant">@color/asm_light_text_muted</item>
+        <item name="colorSurfaceContainerLowest">#FFFFFF</item>
+        <item name="colorSurfaceContainerLow">#F2F5F8</item>
+        <item name="colorSurfaceContainer">#ECEFF3</item>
+        <item name="colorSurfaceContainerHigh">#E5E9EE</item>
+        <item name="colorSurfaceContainerHighest">#DEE3E9</item>
+        <item name="colorOutline">#7A8696</item>
+        <item name="colorOutlineVariant">#CBD2DB</item>
+
+        <item name="android:statusBarColor">@color/asm_light_base</item>
+        <item name="android:navigationBarColor">@color/asm_light_base</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Asm.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Asm.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Asm.Large</item>
+    </style>
+
+    <style name="ShapeAppearance.Asm.Small" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Asm.Medium" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Asm.Large" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <!-- Code in the editor, build output and the status line: the platform monospace face. -->
+    <style name="TextAppearance.Asm.Code" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="TextAppearance.Asm.CodeSmall" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">11sp</item>
+    </style>
 
 </resources>

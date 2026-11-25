@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- The dark theme: the primary look of the design (ADR-0034). -->
+    <style name="Theme.Asm" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/asm_accent</item>
+        <item name="colorOnPrimary">@color/asm_accent_on</item>
+        <item name="colorPrimaryContainer">@color/asm_accent_soft</item>
+        <item name="colorOnPrimaryContainer">@color/asm_accent</item>
+        <item name="colorSecondary">#8FB5A0</item>
+        <item name="colorOnSecondary">#0B1F15</item>
+        <item name="colorSecondaryContainer">#22392D</item>
+        <item name="colorOnSecondaryContainer">#CFE8DA</item>
+        <item name="colorTertiary">@color/asm_info</item>
+        <item name="colorOnTertiary">#04182B</item>
+        <item name="colorError">@color/asm_error</item>
+        <item name="colorOnError">#2A0A0A</item>
+
+        <item name="android:colorBackground">@color/asm_dark_base</item>
+        <item name="colorSurface">@color/asm_dark_base</item>
+        <item name="colorOnBackground">@color/asm_dark_text</item>
+        <item name="colorOnSurface">@color/asm_dark_text</item>
+        <item name="colorSurfaceVariant">@color/asm_dark_raised</item>
+        <item name="colorOnSurfaceVariant">@color/asm_dark_text_muted</item>
+        <item name="colorSurfaceContainerLowest">@color/asm_dark_base</item>
+        <item name="colorSurfaceContainerLow">@color/asm_dark_surface</item>
+        <item name="colorSurfaceContainer">@color/asm_dark_surface</item>
+        <item name="colorSurfaceContainerHigh">@color/asm_dark_raised</item>
+        <item name="colorSurfaceContainerHighest">@color/asm_dark_overlay</item>
+        <item name="colorOutline">@color/asm_dark_outline</item>
+        <item name="colorOutlineVariant">@color/asm_dark_outline_variant</item>
+
+        <item name="android:statusBarColor">@color/asm_dark_base</item>
+        <item name="android:navigationBarColor">@color/asm_dark_base</item>
+        <item name="android:windowLightStatusBar">false</item>
+
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Asm.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Asm.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Asm.Large</item>
+    </style>
+
+</resources>
