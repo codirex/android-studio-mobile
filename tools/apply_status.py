@@ -120,6 +120,6 @@ AR = '''
     <string name="status_java_failed">توقّف خادم Java</string>
     <string name="status_java_off">خادم Java متوقف</string>
 </resources>'''
-edit("res/values/strings.xml", [("</resources>", EN.encode().decode("unicode_escape"))])
-edit("res/values-ar/strings.xml", [("</resources>", AR.encode().decode("unicode_escape"))])
+edit("res/values/strings.xml", [("</resources>", EN)])
+edit("res/values-ar/strings.xml", [("</resources>", AR)])
 print("done")
