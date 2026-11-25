@@ -208,6 +208,26 @@ INSTALL_NEW = r'''    if (state == JavaLanguageServer.State.MISSING && installOf
     }
 '''
 
+SYNC_OLD = r'''    String path = currentPath;
+    if (binding != null && javaServer != null && isJava(path)) {
+      javaServer.documentChanged(uriOf(path), binding.editor.getText().toString());
+    }
+'''
+SYNC_NEW = r'''    String path = currentPath;
+    JavaLanguageServer server = serverFor(path);
+    if (binding != null && server != null) {
+      server.documentChanged(uriOf(path), binding.editor.getText().toString());
+    }
+'''
+
+ACTIONS_OLD = r'''    return javaServer != null
+        && javaServer.state() == JavaLanguageServer.State.READY
+        && isJava(currentPath);
+'''
+ACTIONS_NEW = r'''    JavaLanguageServer server = serverFor(currentPath);
+    return server != null && server.state() == JavaLanguageServer.State.READY;
+'''
+
 GUARD_OLD = r'''    final JavaLanguageServer server = javaServer;
     if (binding == null || server == null || !isJava(path)) {
 '''
@@ -257,12 +277,10 @@ patch(EDITOR + "EditorFragment.java", [
     ("    if (isJava(currentPath)) {\n      handler.removeCallbacks(syncServer);",
      "    if (serverFor(currentPath) != null) {\n      handler.removeCallbacks(syncServer);"),
     (ISJAVA_OLD, ISJAVA_NEW),
-    (r'''    String path = currentPath;\n    if (binding != null && javaServer != null && isJava(path)) {\n      javaServer.documentChanged(uriOf(path), binding.editor.getText().toString());\n    }\n''',
-     r'''    String path = currentPath;\n    JavaLanguageServer server = serverFor(path);\n    if (binding != null && server != null) {\n      server.documentChanged(uriOf(path), binding.editor.getText().toString());\n    }\n'''),
+    (SYNC_OLD, SYNC_NEW),
     ("  private void onServerState(JavaLanguageServer.State state) {", "  private void onServerState(String language, JavaLanguageServer.State state) {"),
     (INSTALL_OLD, INSTALL_NEW),
-    (r'''    return javaServer != null\n        && javaServer.state() == JavaLanguageServer.State.READY\n        && isJava(currentPath);\n''',
-     r'''    JavaLanguageServer server = serverFor(currentPath);\n    return server != null && server.state() == JavaLanguageServer.State.READY;\n'''),
+    (ACTIONS_OLD, ACTIONS_NEW),
     (GUARD_OLD, GUARD_NEW, 3),
     (RENDER_OLD, RENDER_NEW),
     ("    if (base == null || language != SourceLanguage.JAVA) {",
