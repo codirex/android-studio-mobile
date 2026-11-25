@@ -1,0 +1,24 @@
+name: Apply run button (one-off)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/apply_run.py
+      - run: |
+          rm tools/apply_run.py
+          git config user.name "asm-bot"
+          git config user.email "asm-bot@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(app): Run button and the project name in the top bar
+
+          Inside a project the top bar shows its name and a green Run button that builds the debug
+          APK on the build screen (assembleDebug).
+
+          Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+          Claude-Session: https://claude.ai/code/session_01F7fjto5o3b3MMLCyXNFeJr"
+          git push
