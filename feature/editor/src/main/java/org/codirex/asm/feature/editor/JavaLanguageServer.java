@@ -15,6 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.codirex.asm.domain.lsp.CompletionItem;
 import org.codirex.asm.domain.lsp.Diagnostic;
+import org.codirex.asm.domain.lsp.DocumentSymbol;
 import org.codirex.asm.domain.lsp.LanguageSession;
 import org.codirex.asm.domain.lsp.Location;
 import org.codirex.asm.domain.lsp.TextEdit;
@@ -312,6 +313,11 @@ final class JavaLanguageServer {
   /** The edits that format the document, last position first; null if the server did not answer. */
   List<TextEdit> format(String uri, String text, int tabSize) {
     return ask(uri, text, s -> s.format(uri, tabSize));
+  }
+
+  /** The symbols of the document in the order they are declared; null if the server did not answer. */
+  List<DocumentSymbol> documentSymbols(String uri, String text) {
+    return ask(uri, text, s -> s.documentSymbols(uri));
   }
 
   // ---- inside ----

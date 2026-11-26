@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import org.codirex.asm.domain.editor.SourceLanguage;
 import org.codirex.asm.domain.lsp.Diagnostic;
+import org.codirex.asm.domain.lsp.DocumentSymbol;
 import org.codirex.asm.domain.lsp.Location;
 import org.codirex.asm.domain.lsp.TextEdit;
 import org.codirex.asm.domain.project.ProjectName;
@@ -605,6 +606,42 @@ public final class EditorFragment extends Fragment {
   /** Show what the language server says about the symbol at the caret. */
   public void runInfo() {
     showHover();
+  }
+
+  /**
+   * Asks the language server for the symbols of the shown file. {@code done} is called on the main
+   * thread with the symbols (there may be none), or with null if the file has no server that is
+   * ready.
+   */
+  public void loadSymbols(java.util.function.Consumer<List<DocumentSymbol>> done) {
+    final String path = currentPath;
+    final JavaLanguageServer server = serverFor(path);
+    if (binding == null
+        || server == null
+        || server.state() != JavaLanguageServer.State.READY) {
+      done.accept(null);
+      return;
+    }
+    final String text = binding.editor.getText().toString();
+    final String uri = uriOf(path);
+    new Thread(
+            () -> {
+              List<DocumentSymbol> found = server.documentSymbols(uri, text);
+              handler.post(() -> done.accept(found));
+            },
+            "java-symbols")
+        .start();
+  }
+
+  /** Puts the caret at a position (zero based) of the shown file. */
+  public void goTo(int line, int column) {
+    if (binding == null) {
+      return;
+    }
+    io.github.rosemoe.sora.text.Content content = binding.editor.getText();
+    int l = Math.max(0, Math.min(line, content.getLineCount() - 1));
+    int c = Math.max(0, Math.min(column, content.getColumnCount(l)));
+    binding.editor.setSelection(l, c);
   }
 
   private void say(int message) {

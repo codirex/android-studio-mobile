@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import org.codirex.asm.databinding.DialogPaletteBinding;
 import org.codirex.asm.databinding.ItemPaletteRowBinding;
+import org.codirex.asm.domain.lsp.DocumentSymbol;
 import org.codirex.asm.domain.palette.FileIndex;
 import org.codirex.asm.domain.palette.FuzzyMatcher;
 
@@ -38,6 +39,12 @@ public final class CommandPaletteFragment extends DialogFragment {
     File paletteProjectDirectory();
 
     void paletteOpenFile(String relativePath);
+
+    /** The symbols of the shown file, on the main thread; null if there is no server for it. */
+    void paletteSymbols(java.util.function.Consumer<List<DocumentSymbol>> done);
+
+    /** Puts the caret at a position (zero based) of the shown file. */
+    void paletteGoTo(int line, int column);
   }
 
   private static final int MAX_RESULTS = 40;
@@ -48,6 +55,9 @@ public final class CommandPaletteFragment extends DialogFragment {
   private PaletteAdapter adapter;
   private List<PaletteItem> commands = Collections.emptyList();
   private List<PaletteItem> fileItems = Collections.emptyList();
+  private List<PaletteItem> symbolItems;
+  private boolean symbolsRequested;
+  private boolean symbolsFailed;
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -173,7 +183,12 @@ public final class CommandPaletteFragment extends DialogFragment {
     }
     String query = binding.paletteQuery.getText().toString().trim();
     List<PaletteItem> shown;
-    if (query.startsWith(">")) {
+    if (query.startsWith("@")) {
+      requestSymbols();
+      List<PaletteItem> source =
+          symbolItems == null ? Collections.<PaletteItem>emptyList() : symbolItems;
+      shown = FuzzyMatcher.rank(query.substring(1).trim(), source, item -> item.matchText, MAX_RESULTS);
+    } else if (query.startsWith(">")) {
       shown = FuzzyMatcher.rank(query.substring(1).trim(), commands, item -> item.matchText, MAX_RESULTS);
     } else if (query.isEmpty()) {
       shown = FuzzyMatcher.rank("", commands, item -> item.matchText, MAX_RESULTS);
@@ -184,7 +199,50 @@ public final class CommandPaletteFragment extends DialogFragment {
       shown = FuzzyMatcher.rank(query, all, item -> item.matchText, MAX_RESULTS);
     }
     adapter.setItems(shown);
+    int emptyText = R.string.palette_empty;
+    if (query.startsWith("@") && symbolItems == null) {
+      emptyText =
+          symbolsFailed ? R.string.palette_symbols_unavailable : R.string.palette_symbols_loading;
+    }
+    binding.paletteEmpty.setText(emptyText);
     binding.paletteEmpty.setVisibility(shown.isEmpty() ? View.VISIBLE : View.GONE);
+  }
+
+  /** Asks once for the symbols of the shown file; the palette fills in when they arrive. */
+  private void requestSymbols() {
+    if (symbolsRequested) {
+      return;
+    }
+    symbolsRequested = true;
+    final Host host = (Host) requireActivity();
+    host.paletteSymbols(
+        found -> {
+          if (binding == null) {
+            return;
+          }
+          if (found == null) {
+            symbolsFailed = true;
+          } else {
+            List<PaletteItem> built = new ArrayList<>(found.size());
+            for (DocumentSymbol symbol : found) {
+              final int line = symbol.line();
+              final int column = symbol.character();
+              String subtitle = symbol.kindName();
+              if (!symbol.container().isEmpty()) {
+                subtitle += " - " + symbol.container();
+              }
+              built.add(
+                  PaletteItem.file(
+                      symbol.name(),
+                      subtitle,
+                      symbol.name(),
+                      R.drawable.ic_palette_symbol,
+                      () -> host.paletteGoTo(line, column)));
+            }
+            symbolItems = built;
+          }
+          refresh();
+        });
   }
 
   /** The rows of the palette. */

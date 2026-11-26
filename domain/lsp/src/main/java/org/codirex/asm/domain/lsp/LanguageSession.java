@@ -83,6 +83,10 @@ public final class LanguageSession {
     Map<String, Object> formatting = new LinkedHashMap<>();
     formatting.put("dynamicRegistration", false);
     textDocument.put("formatting", formatting);
+    Map<String, Object> documentSymbol = new LinkedHashMap<>();
+    documentSymbol.put("dynamicRegistration", false);
+    documentSymbol.put("hierarchicalDocumentSymbolSupport", true);
+    textDocument.put("documentSymbol", documentSymbol);
     textDocument.put("publishDiagnostics", publish);
     Map<String, Object> workspace = new LinkedHashMap<>();
     workspace.put("configuration", true);
@@ -187,6 +191,17 @@ public final class LanguageSession {
     params.put("textDocument", document);
     params.put("options", options);
     return client.request("textDocument/formatting", params).thenApply(LanguageSession::editsOf);
+  }
+
+  /** Asks for the symbols of a document, in the order they are declared. */
+  public CompletableFuture<List<DocumentSymbol>> documentSymbols(String uri) {
+    Map<String, Object> document = new LinkedHashMap<>();
+    document.put("uri", uri);
+    Map<String, Object> params = new LinkedHashMap<>();
+    params.put("textDocument", document);
+    return client
+        .request("textDocument/documentSymbol", params)
+        .thenApply(LanguageSession::symbolsOf);
   }
 
   private static Map<String, Object> positionParams(String uri, int line, int character) {
@@ -392,6 +407,57 @@ public final class LanguageSession {
                 ? Integer.compare(b.startLine(), a.startLine())
                 : Integer.compare(b.startCharacter(), a.startCharacter()));
     return edits;
+  }
+
+  /**
+   * The symbols of a documentSymbol answer, flattened in declaration order: DocumentSymbol[] (with
+   * children) or SymbolInformation[]. A symbol inside another names it as its container.
+   */
+  static List<DocumentSymbol> symbolsOf(Object result) {
+    List<DocumentSymbol> symbols = new ArrayList<>();
+    if (result instanceof List) {
+      addSymbols((List<?>) result, "", symbols);
+    }
+    return symbols;
+  }
+
+  private static void addSymbols(List<?> list, String container, List<DocumentSymbol> out) {
+    for (Object entry : list) {
+      if (!(entry instanceof Map)) {
+        continue;
+      }
+      Map<?, ?> map = (Map<?, ?>) entry;
+      if (!(map.get("name") instanceof String)) {
+        continue;
+      }
+      Object range = map.get("selectionRange");
+      if (range == null) {
+        range = map.get("range");
+      }
+      if (range == null && map.get("location") instanceof Map) {
+        range = ((Map<?, ?>) map.get("location")).get("range");
+      }
+      if (!(range instanceof Map)) {
+        continue;
+      }
+      Object start = ((Map<?, ?>) range).get("start");
+      String parent = container;
+      if (parent.isEmpty() && map.get("containerName") instanceof String) {
+        parent = (String) map.get("containerName");
+      }
+      String name = (String) map.get("name");
+      out.add(
+          new DocumentSymbol(
+              name,
+              text(map.get("detail"), ""),
+              number(map.get("kind"), 0),
+              number(position(start, "line"), 0),
+              number(position(start, "character"), 0),
+              parent));
+      if (map.get("children") instanceof List) {
+        addSymbols((List<?>) map.get("children"), name, out);
+      }
+    }
   }
 
   static List<Diagnostic> diagnosticsOf(Object list) {

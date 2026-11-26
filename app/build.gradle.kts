@@ -25,6 +25,7 @@ dependencies {
     // Hilt generates code in the app that mentions the domain ports, so their modules must be visible here.
     implementation(project(":domain:editor"))
     implementation(project(":domain:filetree"))
+    implementation(project(":domain:lsp"))
     implementation(project(":domain:palette"))
     implementation(project(":domain:template"))
     implementation(project(":domain:environment"))

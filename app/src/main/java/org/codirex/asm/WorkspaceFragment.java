@@ -155,6 +155,25 @@ public final class WorkspaceFragment extends Fragment {
     binding.drawer.openDrawer(GravityCompat.START);
   }
 
+  /** Asks the language server of the shown file for its symbols (null: not available). */
+  void symbols(
+      java.util.function.Consumer<java.util.List<org.codirex.asm.domain.lsp.DocumentSymbol>> done) {
+    EditorFragment editor = editor();
+    if (editor == null) {
+      done.accept(null);
+    } else {
+      editor.loadSymbols(done);
+    }
+  }
+
+  /** Puts the caret at a position (zero based) of the shown file. */
+  void goTo(int line, int column) {
+    EditorFragment editor = editor();
+    if (editor != null) {
+      editor.goTo(line, column);
+    }
+  }
+
   /** Formats the shown file. */
   void format() {
     EditorFragment editor = editor();
