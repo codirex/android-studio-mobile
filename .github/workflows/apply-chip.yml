@@ -1,0 +1,21 @@
+name: Apply project chip (one-off)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/apply_chip.py
+      - run: |
+          rm tools/apply_chip.py
+          git config user.name "asm-bot"
+          git config user.email "asm-bot@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(app): the open project is a chip in the top bar
+
+          Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+          Claude-Session: https://claude.ai/code/session_01F7fjto5o3b3MMLCyXNFeJr"
+          git push
