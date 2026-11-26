@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import dagger.hilt.android.AndroidEntryPoint;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import org.codirex.asm.databinding.ActivityMainBinding;
 import org.codirex.asm.domain.project.ProjectName;
@@ -38,7 +39,8 @@ public final class MainActivity extends AppCompatActivity
         FileTreeNavigator,
         EditorNavigator,
         ToolchainNavigator,
-        BuildNavigator {
+        BuildNavigator,
+        CommandPaletteFragment.Host {
 
   private ActivityMainBinding binding;
 
@@ -71,6 +73,10 @@ public final class MainActivity extends AppCompatActivity
     MenuItem terminal = menu.findItem(R.id.action_terminal);
     if (terminal != null) {
       terminal.setVisible(workspace() != null);
+    }
+    MenuItem palette = menu.findItem(R.id.action_palette);
+    if (palette != null) {
+      palette.setVisible(workspace() != null);
     }
     MenuItem run = menu.findItem(R.id.action_run);
     if (run != null) {
@@ -109,6 +115,10 @@ public final class MainActivity extends AppCompatActivity
   public boolean onOptionsItemSelected(MenuItem item) {
     if (item.getItemId() == R.id.action_terminal) {
       showTerminal();
+      return true;
+    }
+    if (item.getItemId() == R.id.action_palette) {
+      showPalette();
       return true;
     }
     if (item.getItemId() == R.id.action_run) {
@@ -344,6 +354,101 @@ public final class MainActivity extends AppCompatActivity
     } else {
       showGradleTasks();
     }
+  }
+
+  /** Opens the command palette over the open project. */
+  private void showPalette() {
+    if (workspace() == null) {
+      return;
+    }
+    new CommandPaletteFragment().show(getSupportFragmentManager(), "palette");
+  }
+
+  @Override
+  public File paletteProjectDirectory() {
+    WorkspaceFragment workspace = workspace();
+    return workspace == null
+        ? null
+        : new File(getFilesDir(), "projects/" + workspace.project().value());
+  }
+
+  @Override
+  public void paletteOpenFile(String relativePath) {
+    WorkspaceFragment workspace = workspace();
+    if (workspace != null) {
+      workspace.openFile(relativePath);
+    }
+  }
+
+  /** The commands of the palette. The editor commands do nothing when no file is shown. */
+  @Override
+  public List<PaletteItem> paletteCommands() {
+    String server = getString(R.string.palette_language_server);
+    List<PaletteItem> items = new ArrayList<>();
+    items.add(
+        new PaletteItem(
+            getString(R.string.palette_run), "assembleDebug", R.drawable.ic_palette_run, this::runProject));
+    items.add(
+        new PaletteItem(
+            getString(R.string.palette_format),
+            server,
+            R.drawable.ic_palette_format,
+            () -> {
+              WorkspaceFragment workspace = workspace();
+              if (workspace != null) {
+                workspace.format();
+              }
+            }));
+    items.add(
+        new PaletteItem(
+            getString(R.string.palette_definition),
+            server,
+            R.drawable.ic_palette_definition,
+            () -> {
+              WorkspaceFragment workspace = workspace();
+              if (workspace != null) {
+                workspace.definition();
+              }
+            }));
+    items.add(
+        new PaletteItem(
+            getString(R.string.palette_info),
+            server,
+            R.drawable.ic_palette_info,
+            () -> {
+              WorkspaceFragment workspace = workspace();
+              if (workspace != null) {
+                workspace.info();
+              }
+            }));
+    items.add(
+        new PaletteItem(
+            getString(R.string.palette_gradle), "", R.drawable.ic_dock_build, this::showGradleTasks));
+    items.add(
+        new PaletteItem(
+            getString(R.string.palette_terminal), "", R.drawable.ic_dock_terminal, this::showTerminal));
+    items.add(
+        new PaletteItem(
+            getString(R.string.palette_files),
+            "",
+            R.drawable.ic_dock_files,
+            () -> {
+              WorkspaceFragment workspace = workspace();
+              if (workspace != null) {
+                workspace.showFiles();
+              }
+            }));
+    items.add(new PaletteItem(getString(R.string.palette_sdk), "", R.drawable.ic_dock_build, this::showSdk));
+    items.add(
+        new PaletteItem(
+            getString(R.string.palette_toolchain), "", R.drawable.ic_dock_build, this::showToolchain));
+    items.add(
+        new PaletteItem(
+            getString(R.string.palette_environment),
+            "",
+            R.drawable.ic_dock_terminal,
+            this::showEnvironment));
+    return items;
   }
 
   /** The open project's workspace, or null when another screen is shown. */

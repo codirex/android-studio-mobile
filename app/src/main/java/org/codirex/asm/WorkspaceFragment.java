@@ -155,6 +155,30 @@ public final class WorkspaceFragment extends Fragment {
     binding.drawer.openDrawer(GravityCompat.START);
   }
 
+  /** Formats the shown file. */
+  void format() {
+    EditorFragment editor = editor();
+    if (editor != null) {
+      editor.runFormat();
+    }
+  }
+
+  /** Goes to the definition of the symbol at the caret. */
+  void definition() {
+    EditorFragment editor = editor();
+    if (editor != null) {
+      editor.runDefinition();
+    }
+  }
+
+  /** Shows information about the symbol at the caret. */
+  void info() {
+    EditorFragment editor = editor();
+    if (editor != null) {
+      editor.runInfo();
+    }
+  }
+
   private EditorFragment editor() {
     Fragment editor = getChildFragmentManager().findFragmentById(R.id.editor_container);
     return editor instanceof EditorFragment ? (EditorFragment) editor : null;

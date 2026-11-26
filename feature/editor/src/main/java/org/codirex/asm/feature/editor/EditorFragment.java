@@ -592,6 +592,21 @@ public final class EditorFragment extends Fragment {
     }
   }
 
+  /** Format the shown file (the palette and the selection menu share this). */
+  public void runFormat() {
+    formatDocument();
+  }
+
+  /** Go to the definition of the symbol at the caret. */
+  public void runDefinition() {
+    goToDefinition();
+  }
+
+  /** Show what the language server says about the symbol at the caret. */
+  public void runInfo() {
+    showHover();
+  }
+
   private void say(int message) {
     if (binding != null) {
       Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_SHORT).show();
