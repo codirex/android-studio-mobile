@@ -2,6 +2,7 @@ package org.codirex.asm;
 
 import android.os.Bundle;
 import android.view.Menu;
+import android.view.View;
 import android.view.MenuItem;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
@@ -50,6 +51,7 @@ public final class MainActivity extends AppCompatActivity
     binding = ActivityMainBinding.inflate(getLayoutInflater());
     setContentView(binding.getRoot());
     setSupportActionBar(binding.toolbar);
+    binding.projectChip.setOnClickListener(v -> showPalette());
 
     getSupportFragmentManager().addOnBackStackChangedListener(this::updateUpButton);
     if (savedInstanceState == null) {
@@ -481,7 +483,11 @@ public final class MainActivity extends AppCompatActivity
     if (bar != null) {
       bar.setDisplayHomeAsUpEnabled(getSupportFragmentManager().getBackStackEntryCount() > 0);
       WorkspaceFragment open = workspace();
-      bar.setTitle(open != null ? open.project().value() : getString(R.string.app_name));
+      bar.setTitle(open != null ? "" : getString(R.string.app_name));
+      binding.projectChip.setVisibility(open != null ? View.VISIBLE : View.GONE);
+      if (open != null) {
+        binding.projectChip.setText(open.project().value());
+      }
     }
     invalidateOptionsMenu();
   }
