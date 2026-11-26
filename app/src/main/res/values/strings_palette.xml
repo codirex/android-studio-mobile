@@ -2,8 +2,10 @@
 <resources>
     <string name="palette_action">Search</string>
     <string name="palette_query_hint">Search files and commands</string>
-    <string name="palette_hint">Search files and commands. Start with &gt; to search commands only.</string>
+    <string name="palette_hint">Search files and commands. Start with &gt; for commands only, or @ for symbols in this file.</string>
     <string name="palette_empty">Nothing matches</string>
+    <string name="palette_symbols_loading">Loading symbols…</string>
+    <string name="palette_symbols_unavailable">The language server of this file is not ready</string>
     <string name="palette_language_server">Language server</string>
     <string name="palette_run">Run app</string>
     <string name="palette_format">Format document</string>

@@ -2,8 +2,10 @@
 <resources>
     <string name="palette_action">بحث</string>
     <string name="palette_query_hint">ابحث عن ملفات وأوامر</string>
-    <string name="palette_hint">ابحث عن ملفات وأوامر. ابدأ بـ &gt; للبحث عن الأوامر فقط.</string>
+    <string name="palette_hint">ابحث عن ملفات وأوامر. ابدأ بـ &gt; للأوامر فقط، أو بـ @ لرموز هذا الملف.</string>
     <string name="palette_empty">لا توجد نتائج</string>
+    <string name="palette_symbols_loading">جارٍ تحميل الرموز…</string>
+    <string name="palette_symbols_unavailable">خادم لغة هذا الملف غير جاهز</string>
     <string name="palette_language_server">خادم اللغة</string>
     <string name="palette_run">تشغيل التطبيق</string>
     <string name="palette_format">تنسيق المستند</string>
