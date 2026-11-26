@@ -37,6 +37,8 @@
         <item name="android:navigationBarColor">@color/asm_light_base</item>
         <item name="android:windowLightStatusBar">true</item>
 
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="fontFamily">@font/inter</item>
         <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Asm.Small</item>
         <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Asm.Medium</item>
         <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Asm.Large</item>
@@ -57,14 +59,16 @@
         <item name="cornerSize">16dp</item>
     </style>
 
-    <!-- Code in the editor, build output and the status line: the platform monospace face. -->
+    <!-- Code in the editor, build output and the status line: JetBrains Mono. -->
     <style name="TextAppearance.Asm.Code" parent="TextAppearance.Material3.BodyMedium">
-        <item name="android:fontFamily">monospace</item>
+        <item name="android:fontFamily">@font/jetbrains_mono</item>
+        <item name="fontFamily">@font/jetbrains_mono</item>
         <item name="android:textSize">13sp</item>
     </style>
 
     <style name="TextAppearance.Asm.CodeSmall" parent="TextAppearance.Material3.BodySmall">
-        <item name="android:fontFamily">monospace</item>
+        <item name="android:fontFamily">@font/jetbrains_mono</item>
+        <item name="fontFamily">@font/jetbrains_mono</item>
         <item name="android:textSize">11sp</item>
     </style>
 

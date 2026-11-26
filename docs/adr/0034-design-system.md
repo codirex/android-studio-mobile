@@ -25,3 +25,10 @@ Android 12+.
 
 Screens are rebuilt one by one on these tokens: editor chrome, build, projects, command palette,
 toolchain.
+
+## Fonts
+
+The design's two families are bundled in `core:ui` (`res/font`, SIL OFL 1.1, see
+`docs/third-party/fonts.md`): Inter for the interface (set in the theme) and JetBrains Mono for
+code (the `TextAppearance.Asm.Code*` styles and the editor widget). Noto Sans Arabic is not
+bundled: Arabic text uses the system face. The terminal view keeps the platform monospace.

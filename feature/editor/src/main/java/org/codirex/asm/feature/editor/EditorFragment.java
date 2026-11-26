@@ -233,6 +233,12 @@ public final class EditorFragment extends Fragment {
     }
     binding.editor.subscribeAlways(ContentChangeEvent.class, this::onContentChanged);
     binding.editor.registerDiagnosticProvider(diagnosticProvider);
+    android.graphics.Typeface mono =
+        androidx.core.content.res.ResourcesCompat.getFont(
+            requireContext(), org.codirex.asm.core.ui.R.font.jetbrains_mono_regular);
+    if (mono != null) {
+      binding.editor.setTypefaceText(mono);
+    }
 
     binding.showFiles.setOnClickListener(
         v -> ((EditorNavigator) requireActivity()).showFileTree());

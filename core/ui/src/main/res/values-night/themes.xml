@@ -34,6 +34,8 @@
         <item name="android:navigationBarColor">@color/asm_dark_base</item>
         <item name="android:windowLightStatusBar">false</item>
 
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="fontFamily">@font/inter</item>
         <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Asm.Small</item>
         <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Asm.Medium</item>
         <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Asm.Large</item>
