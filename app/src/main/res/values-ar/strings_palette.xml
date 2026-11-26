@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="palette_action">بحث</string>
+    <string name="palette_query_hint">ابحث عن ملفات وأوامر</string>
+    <string name="palette_hint">ابحث عن ملفات وأوامر. ابدأ بـ &gt; للبحث عن الأوامر فقط.</string>
+    <string name="palette_empty">لا توجد نتائج</string>
+    <string name="palette_language_server">خادم اللغة</string>
+    <string name="palette_run">تشغيل التطبيق</string>
+    <string name="palette_format">تنسيق المستند</string>
+    <string name="palette_definition">الانتقال إلى التعريف</string>
+    <string name="palette_info">عرض المعلومات</string>
+    <string name="palette_gradle">تشغيل مهمة Gradle…</string>
+    <string name="palette_terminal">فتح الطرفية</string>
+    <string name="palette_files">إظهار شجرة الملفات</string>
+    <string name="palette_sdk">Android SDK</string>
+    <string name="palette_toolchain">أدوات التطوير</string>
+    <string name="palette_environment">متغيرات البيئة</string>
+</resources>

@@ -2,6 +2,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <!-- The command palette: files and commands in one search. -->
+    <item
+        android:id="@+id/action_palette"
+        android:icon="@drawable/ic_action_search"
+        android:title="@string/palette_action"
+        android:visible="false"
+        app:showAsAction="always" />
+
     <!-- Builds the debug APK of the open project (the green button of the design). -->
     <item
         android:id="@+id/action_run"

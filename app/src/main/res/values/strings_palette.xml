@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="palette_action">Search</string>
+    <string name="palette_query_hint">Search files and commands</string>
+    <string name="palette_hint">Search files and commands. Start with &gt; to search commands only.</string>
+    <string name="palette_empty">Nothing matches</string>
+    <string name="palette_language_server">Language server</string>
+    <string name="palette_run">Run app</string>
+    <string name="palette_format">Format document</string>
+    <string name="palette_definition">Go to definition</string>
+    <string name="palette_info">Show info</string>
+    <string name="palette_gradle">Run Gradle task…</string>
+    <string name="palette_terminal">Open terminal</string>
+    <string name="palette_files">Show file tree</string>
+    <string name="palette_sdk">Android SDK</string>
+    <string name="palette_toolchain">Toolchain</string>
+    <string name="palette_environment">Environment variables</string>
+</resources>
