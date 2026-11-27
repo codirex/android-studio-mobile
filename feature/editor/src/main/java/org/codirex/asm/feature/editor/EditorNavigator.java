@@ -14,4 +14,7 @@ public interface EditorNavigator {
    * host runs the package manager where the person can see it.
    */
   void installPackage(String packageName);
+
+  /** The user asked to see a Gradle task run on the build screen (the details of a failed sync). */
+  void showBuild(String task);
 }

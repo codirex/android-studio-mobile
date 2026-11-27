@@ -270,6 +270,13 @@ public final class MainActivity extends AppCompatActivity
   }
 
   @Override
+  public void showBuild(String task) {
+    if (workspace() != null && GradleTask.isValidName(task)) {
+      runGradle(new GradleTask(task));
+    }
+  }
+
+  @Override
   public void showFileTree() {
     WorkspaceFragment workspace = workspace();
     if (workspace != null) {
@@ -445,6 +452,17 @@ public final class MainActivity extends AppCompatActivity
     items.add(
         new PaletteItem(
             getString(R.string.palette_gradle), "", R.drawable.ic_dock_build, this::showGradleTasks));
+    items.add(
+        new PaletteItem(
+            getString(R.string.palette_sync),
+            "",
+            R.drawable.ic_dock_build,
+            () -> {
+              WorkspaceFragment workspace = workspace();
+              if (workspace != null) {
+                workspace.sync();
+              }
+            }));
     items.add(
         new PaletteItem(
             getString(R.string.palette_terminal), "", R.drawable.ic_dock_terminal, this::showTerminal));

@@ -252,6 +252,7 @@ public final class EditorFragment extends Fragment {
     setUpSelectionMenu();
     setUpStatusLine();
     setUpQuickKeys();
+    startSync(false);
     binding.tabs.addOnTabSelectedListener(
         new TabLayout.OnTabSelectedListener() {
           @Override
@@ -545,6 +546,10 @@ public final class EditorFragment extends Fragment {
             R.string.status_position,
             binding.editor.getCursor().getLeftLine() + 1,
             binding.editor.getCursor().getLeftColumn() + 1));
+    if (GradleSync.isRunning(projectDirectory)) {
+      binding.statusServer.setText(R.string.status_sync_running);
+      return;
+    }
     JavaLanguageServer fileServer = serverFor(currentPath);
     if (fileServer != null) {
       int label;
@@ -655,6 +660,81 @@ public final class EditorFragment extends Fragment {
     int l = Math.max(0, Math.min(line, content.getLineCount() - 1));
     int c = Math.max(0, Math.min(column, content.getColumnCount(l)));
     binding.editor.setSelection(l, c);
+  }
+
+  /** Runs the Gradle sync now (the palette command), whether or not it is due. */
+  public void runSync() {
+    startSync(true);
+  }
+
+  /** Syncs the project's Gradle files for the Java server (ADR-0037), if forced or due. */
+  private void startSync(boolean force) {
+    if (binding == null || projectDirectory == null) {
+      return;
+    }
+    if (!force && !GradleSync.needed(projectDirectory)) {
+      return;
+    }
+    if (!GradleSync.isRunning(projectDirectory)) {
+      GradleSync.start(
+          requireContext(),
+          projectDirectory,
+          (ok, message) -> handler.post(() -> onSyncFinished(ok)));
+    }
+    updateStatus();
+  }
+
+  private void onSyncFinished(boolean ok) {
+    if (binding == null) {
+      return;
+    }
+    updateStatus();
+    if (ok) {
+      restartServer("java");
+      say(R.string.sync_done);
+      return;
+    }
+    Snackbar.make(binding.getRoot(), R.string.sync_failed, Snackbar.LENGTH_LONG)
+        .setAction(
+            R.string.sync_details, v -> ((EditorNavigator) requireActivity()).showBuild("asmSync"))
+        .show();
+  }
+
+  /** Starts the server of a language anew, so that it reads the files the sync wrote. */
+  private void restartServer(String language) {
+    JavaLanguageServer old = servers.get(language);
+    if (old == null || binding == null) {
+      return;
+    }
+    old.setListener(null);
+    old.stop();
+    JavaLanguageServer fresh =
+        new JavaLanguageServer(
+            requireContext(),
+            projectDirectory,
+            workspaceKey(requireArguments().getString(EditorViewModel.ARG_PROJECT)),
+            language);
+    new ViewModelProvider(this).get(LanguageServerHolder.class).setServer(language, fresh);
+    servers.put(language, fresh);
+    fresh.setListener(listenerFor(language));
+    if (language.equals(lspLanguage(currentPath))) {
+      fresh.start();
+      syncServerNow();
+    }
+  }
+
+  private JavaLanguageServer.Listener listenerFor(final String language) {
+    return new JavaLanguageServer.Listener() {
+      @Override
+      public void onState(JavaLanguageServer.State state) {
+        handler.post(() -> onServerState(language, state));
+      }
+
+      @Override
+      public void onDiagnostics(String uri, List<Diagnostic> found) {
+        handler.post(() -> onServerDiagnostics(uri, found));
+      }
+    };
   }
 
   private void say(int message) {

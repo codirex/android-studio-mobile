@@ -174,6 +174,14 @@ public final class WorkspaceFragment extends Fragment {
     }
   }
 
+  /** Runs the Gradle sync of the project for the Java language server. */
+  void sync() {
+    EditorFragment editor = editor();
+    if (editor != null) {
+      editor.runSync();
+    }
+  }
+
   /** Formats the shown file. */
   void format() {
     EditorFragment editor = editor();
