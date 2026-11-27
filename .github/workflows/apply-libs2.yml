@@ -1,0 +1,21 @@
+name: Apply project views and workspace symbols (one-off)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git apply --unidiff-zero tools/libs2.patch
+      - run: |
+          rm tools/libs2.patch
+          git config user.name "asm-bot"
+          git config user.email "asm-bot@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(editor): project views, tools: namespace and workspace symbols (#)
+
+          Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+          Claude-Session: https://claude.ai/code/session_01F7fjto5o3b3MMLCyXNFeJr"
+          git push
