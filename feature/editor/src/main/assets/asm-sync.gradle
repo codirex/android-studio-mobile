@@ -30,6 +30,9 @@ def asmWrite = { Project p ->
     }
     def libraries = new LinkedHashSet<String>()
     def projects = new LinkedHashSet<String>()
+    // For the completion of layouts (ADR-0038): the resource folders and jars of the libraries.
+    def resourceDirs = new LinkedHashSet<String>()
+    def libraryJars = new LinkedHashSet<String>()
 
     if (android != null) {
         try {
@@ -62,12 +65,33 @@ def asmWrite = { Project p ->
             view.files.each { f ->
                 if (f.name.endsWith(".jar") && f.exists()) {
                     libraries << f.absolutePath
+                    libraryJars << f.absolutePath
+                }
+            }
+            if (android != null) {
+                try {
+                    def resView = configuration.incoming.artifactView { v ->
+                        v.lenient(true)
+                        v.attributes { a -> a.attribute(Attribute.of("artifactType", String), "android-res") }
+                        v.componentFilter { id -> !(id instanceof ProjectComponentIdentifier) }
+                    }
+                    resView.files.each { f ->
+                        if (f.isDirectory()) {
+                            resourceDirs << f.absolutePath
+                        }
+                    }
+                } catch (Throwable e) {
+                    println "ASM_SYNC_WARN ${p.path}: no library resources (${e.message})"
                 }
             }
             configuration.incoming.resolutionResult.allComponents.each { c ->
                 def id = c.id
                 if (id instanceof ProjectComponentIdentifier && id.projectPath != p.path) {
                     projects << id.projectPath
+                    def other = p.rootProject.findProject(id.projectPath)
+                    if (other != null && new File(other.projectDir, "src/main/res").isDirectory()) {
+                        resourceDirs << new File(other.projectDir, "src/main/res").absolutePath
+                    }
                 }
             }
         } catch (Throwable e) {
@@ -81,6 +105,19 @@ def asmWrite = { Project p ->
                 libraries << f.absolutePath
             }
         }
+    }
+
+    if (android != null) {
+        def own = new File(dir, "src/main/res")
+        if (own.isDirectory()) {
+            resourceDirs << own.absolutePath
+        }
+        def list = new StringBuilder()
+        resourceDirs.each { list.append("res ").append(it).append("\n") }
+        libraryJars.each { list.append("jar ").append(it).append("\n") }
+        def asmDir = new File(dir, ".asm")
+        asmDir.mkdirs()
+        new File(asmDir, "libs.txt").write(list.toString(), "UTF-8")
     }
 
     if (sources.isEmpty() && android == null) {

@@ -967,7 +967,8 @@ public final class EditorFragment extends Fragment {
     List<org.codirex.asm.domain.lsp.CompletionItem> merged = new ArrayList<>();
     Set<String> labels = new HashSet<>();
     int offset = AndroidXmlCompleter.offsetOf(text, line, column);
-    for (AndroidXmlCompleter.Proposal p : new AndroidXmlCompleter(catalog, resourcesNow()).complete(text, offset)) {
+    for (AndroidXmlCompleter.Proposal p : new AndroidXmlCompleter(catalog, resourcesNow(), LibraryCache.get(projectDirectory, path))
+            .complete(text, offset)) {
       labels.add(p.label());
       merged.add(
           new org.codirex.asm.domain.lsp.CompletionItem(

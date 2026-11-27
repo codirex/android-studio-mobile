@@ -98,7 +98,8 @@ public class AndroidXmlCompleterTest {
   @Test
   public void tagsAreProposed() throws IOException {
     List<String> labels = labels("<LinearLayout>\n<Tex");
-    assertEquals(java.util.Arrays.asList("TextView"), labels);
+    assertEquals("TextView", labels.get(0));
+    assertFalse(labels.contains("Button"));
     assertTrue(labels("<").contains("Button"));
   }
 

@@ -66,6 +66,9 @@ final class GradleSync {
   }
 
   /** Whether the project is a Gradle project that has not been synced since its Gradle files changed. */
+  /** When the init script last changed (epoch milliseconds); an older sync is run again. */
+  private static final long SCRIPT_UPDATED = 1795773600000L;
+
   static boolean needed(File project) {
     boolean gradle =
         new File(project, "build.gradle").isFile()
@@ -76,7 +79,10 @@ final class GradleSync {
       return false;
     }
     File stamp = new File(project, ".asm/sync.stamp");
-    return !stamp.isFile() || newestInput(project, 0) > stamp.lastModified();
+    // A stamp older than the last change of the script (the library lists came with ADR-0038) is stale.
+    return !stamp.isFile()
+        || stamp.lastModified() < SCRIPT_UPDATED
+        || newestInput(project, 0) > stamp.lastModified();
   }
 
   private static long newestInput(File dir, int depth) {

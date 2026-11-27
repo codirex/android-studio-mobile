@@ -23,13 +23,68 @@ import org.xml.sax.SAXException;
 public final class AttrCatalog {
 
   private final Map<String, List<AttrDef>> styleables;
+  private final Map<String, AttrDef> definitions;
 
-  private AttrCatalog(Map<String, List<AttrDef>> styleables) {
+  private AttrCatalog(Map<String, List<AttrDef>> styleables, Map<String, AttrDef> definitions) {
     this.styleables = styleables;
+    this.definitions = definitions;
   }
 
-  /** Reads an attrs.xml. */
+  /** An empty catalog. */
+  public static AttrCatalog empty() {
+    return new AttrCatalog(new LinkedHashMap<String, List<AttrDef>>(), new HashMap<String, AttrDef>());
+  }
+
+  /** Reads an attrs.xml of the framework. */
   public static AttrCatalog parse(InputStream in) throws IOException {
+    return parse(in, false);
+  }
+
+  /**
+   * Reads a values file of a library: the attributes in the {@code app:} namespace. The mentions of
+   * framework attributes ({@code android:text}) are left out, they belong to the framework catalog.
+   */
+  public static AttrCatalog parseLibrary(InputStream in) throws IOException {
+    return parse(in, true);
+  }
+
+  /** The catalogs in one; a bare mention in one is resolved by a definition in any other. */
+  public static AttrCatalog merge(List<AttrCatalog> catalogs) {
+    Map<String, AttrDef> definitions = new HashMap<>();
+    for (AttrCatalog catalog : catalogs) {
+      for (Map.Entry<String, AttrDef> e : catalog.definitions.entrySet()) {
+        if (!definitions.containsKey(e.getKey())) {
+          definitions.put(e.getKey(), e.getValue());
+        }
+      }
+    }
+    Map<String, List<AttrDef>> styleables = new LinkedHashMap<>();
+    for (AttrCatalog catalog : catalogs) {
+      for (Map.Entry<String, List<AttrDef>> e : catalog.styleables.entrySet()) {
+        List<AttrDef> list = styleables.get(e.getKey());
+        if (list == null) {
+          list = new ArrayList<>();
+          styleables.put(e.getKey(), list);
+        }
+        for (AttrDef def : e.getValue()) {
+          list.add(def.isBare() && definitions.containsKey(def.name()) ? definitions.get(def.name()) : def);
+        }
+      }
+    }
+    return new AttrCatalog(styleables, definitions);
+  }
+
+  /** The names of the styleables. */
+  public java.util.Set<String> styleableNames() {
+    return Collections.unmodifiableSet(styleables.keySet());
+  }
+
+  /** Whether the catalog has no styleable. */
+  public boolean isEmpty() {
+    return styleables.isEmpty();
+  }
+
+  private static AttrCatalog parse(InputStream in, boolean library) throws IOException {
     try {
       DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
       factory.setNamespaceAware(false);
@@ -40,17 +95,17 @@ public final class AttrCatalog {
         // Not every parser knows the feature; attrs.xml has no doctype anyway.
       }
       Document document = factory.newDocumentBuilder().parse(in);
-      return fromDocument(document);
+      return fromDocument(document, library);
     } catch (ParserConfigurationException | SAXException e) {
       throw new IOException("not a valid attrs.xml", e);
     }
   }
 
-  private static AttrCatalog fromDocument(Document document) {
+  private static AttrCatalog fromDocument(Document document, boolean library) {
     Element root = document.getDocumentElement();
     // First every definition, wherever it stands, so that bare mentions can be resolved.
     Map<String, AttrDef> definitions = new HashMap<>();
-    collect(root, definitions);
+    collect(root, definitions, library);
     Map<String, List<AttrDef>> styleables = new LinkedHashMap<>();
     for (Node node = root.getFirstChild(); node != null; node = node.getNextSibling()) {
       if (!(node instanceof Element) || !"declare-styleable".equals(node.getNodeName())) {
@@ -65,7 +120,7 @@ public final class AttrCatalog {
       }
       for (Node child = styleable.getFirstChild(); child != null; child = child.getNextSibling()) {
         if (child instanceof Element && "attr".equals(child.getNodeName())) {
-          AttrDef def = read((Element) child);
+          AttrDef def = read((Element) child, library);
           if (def == null) {
             continue;
           }
@@ -76,28 +131,31 @@ public final class AttrCatalog {
         }
       }
     }
-    return new AttrCatalog(styleables);
+    return new AttrCatalog(styleables, definitions);
   }
 
-  private static void collect(Element parent, Map<String, AttrDef> definitions) {
+  private static void collect(Element parent, Map<String, AttrDef> definitions, boolean library) {
     for (Node node = parent.getFirstChild(); node != null; node = node.getNextSibling()) {
       if (!(node instanceof Element)) {
         continue;
       }
       if ("attr".equals(node.getNodeName())) {
-        AttrDef def = read((Element) node);
+        AttrDef def = read((Element) node, library);
         if (def != null && !def.isBare() && !definitions.containsKey(def.name())) {
           definitions.put(def.name(), def);
         }
       } else if ("declare-styleable".equals(node.getNodeName())) {
-        collect((Element) node, definitions);
+        collect((Element) node, definitions, library);
       }
     }
   }
 
-  private static AttrDef read(Element element) {
+  private static AttrDef read(Element element, boolean library) {
     String name = element.getAttribute("name");
     if (name.startsWith("android:")) {
+      if (library) {
+        return null;
+      }
       name = name.substring("android:".length());
     }
     if (name.isEmpty()) {

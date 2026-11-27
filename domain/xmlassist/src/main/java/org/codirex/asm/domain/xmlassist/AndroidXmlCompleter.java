@@ -13,8 +13,8 @@ import java.util.Set;
  * Proposes what fits at the caret of an Android layout file: view tags, {@code android:}
  * attributes of the tag (by its class and by the layout it is in) and the values of an attribute,
  * including {@code @type/name} references to the resources of the project. It knows the framework
- * (attrs.xml) and the project's own resources; {@code app:} attributes and library views are left to
- * the language server.
+ * (attrs.xml), the project's own resources and, once the module is synced, the {@code app:}
+ * attributes and the views of its libraries (ADR-0038).
  */
 public final class AndroidXmlCompleter {
 
@@ -57,14 +57,21 @@ public final class AndroidXmlCompleter {
 
   private final AttrCatalog catalog;
   private final ResourceIndex resources;
+  private final LibraryIndex libraries;
 
   public AndroidXmlCompleter(AttrCatalog catalog) {
     this(catalog, ResourceIndex.empty());
   }
 
   public AndroidXmlCompleter(AttrCatalog catalog, ResourceIndex resources) {
+    this(catalog, resources, LibraryIndex.empty());
+  }
+
+  public AndroidXmlCompleter(
+      AttrCatalog catalog, ResourceIndex resources, LibraryIndex libraries) {
     this.catalog = Objects.requireNonNull(catalog, "catalog");
     this.resources = Objects.requireNonNull(resources, "resources");
+    this.libraries = Objects.requireNonNull(libraries, "libraries");
   }
 
   /** Whether a project file is a layout, where this completion applies. */
@@ -114,12 +121,22 @@ public final class AndroidXmlCompleter {
   private List<Proposal> tags(XmlContext context) {
     List<Proposal> out = new ArrayList<>();
     String typed = context.prefix();
-    if (typed.indexOf('.') >= 0) {
-      return out;
+    if (typed.indexOf('.') < 0) {
+      for (String tag : ViewClasses.knownTags()) {
+        if (matches(tag, typed)) {
+          out.add(new Proposal(tag, "view", tag, typed.length()));
+        }
+      }
     }
-    for (String tag : ViewClasses.knownTags()) {
-      if (matches(tag, typed)) {
-        out.add(new Proposal(tag, "view", tag, typed.length()));
+    for (String view : libraries.views()) {
+      int dot = view.lastIndexOf('.');
+      String simple = view.substring(dot + 1);
+      boolean fits =
+          typed.indexOf('.') >= 0
+              ? view.toLowerCase(Locale.ROOT).contains(typed.toLowerCase(Locale.ROOT))
+              : matches(simple, typed);
+      if (fits) {
+        out.add(new Proposal(simple, view.substring(0, Math.max(dot, 0)), view, typed.length()));
       }
     }
     return out;
@@ -131,35 +148,87 @@ public final class AndroidXmlCompleter {
     return catalog.attributes(styleables);
   }
 
+  /**
+   * The styleables of the libraries that a tag takes: its own (by its simple name), the AppCompat
+   * and Material versions of a framework widget, the layout parameters of the parent.
+   */
+  private List<AttrDef> libraryAttributesOf(XmlContext context) {
+    AttrCatalog libs = libraries.attributes();
+    if (libs.isEmpty()) {
+      return Collections.emptyList();
+    }
+    List<String> names = new ArrayList<>();
+    String simple = context.tag().substring(context.tag().lastIndexOf('.') + 1);
+    names.add(simple);
+    if (!libs.hasStyleable(simple)) {
+      names.add(simple + "_Layout");
+    }
+    for (String cls : ViewClasses.chain(context.tag())) {
+      names.add(cls);
+      names.add("AppCompat" + cls);
+      names.add("Material" + cls);
+    }
+    if (context.parent() != null) {
+      String parent = context.parent().substring(context.parent().lastIndexOf('.') + 1);
+      names.add(parent + "_Layout");
+      for (String cls : ViewClasses.chain(context.parent())) {
+        names.add(cls + "_Layout");
+      }
+    }
+    return libs.attributes(names);
+  }
+
   private List<Proposal> attributeNames(XmlContext context) {
     List<Proposal> out = new ArrayList<>();
     String prefix = context.prefix();
+    boolean framework = true;
+    boolean library = true;
     String typed = prefix;
-    if (prefix.indexOf(':') >= 0) {
-      if (!prefix.startsWith("android:")) {
+    int colon = prefix.indexOf(':');
+    if (colon >= 0) {
+      framework = prefix.startsWith("android:");
+      library = prefix.startsWith("app:");
+      if (!framework && !library) {
         return out;
       }
-      typed = prefix.substring("android:".length());
+      typed = prefix.substring(colon + 1);
     }
-    for (AttrDef def : attributesOf(context)) {
-      String full = "android:" + def.name();
-      if (context.existing().contains(full) || !matches(def.name(), typed)) {
+    if (framework) {
+      add(out, attributesOf(context), "android:", context, prefix, typed);
+    }
+    if (library) {
+      add(out, libraryAttributesOf(context), "app:", context, prefix, typed);
+    }
+    return out;
+  }
+
+  private void add(
+      List<Proposal> out,
+      List<AttrDef> defs,
+      String namespace,
+      XmlContext context,
+      String prefix,
+      String typed) {
+    for (AttrDef def : defs) {
+      String full = namespace + def.name();
+      if (context.existing().contains(full)
+          || !(matches(def.name(), typed) || full.startsWith(prefix))) {
         continue;
       }
       out.add(new Proposal(full, join(def.formats()), full + "=\"\"", prefix.length()));
     }
-    return out;
   }
 
   private List<Proposal> attributeValues(XmlContext context) {
     List<Proposal> out = new ArrayList<>();
     String attribute = context.attribute();
-    if (!attribute.startsWith("android:")) {
+    boolean app = attribute.startsWith("app:");
+    if (!attribute.startsWith("android:") && !app) {
       return out;
     }
-    String name = attribute.substring("android:".length());
+    String name = attribute.substring(attribute.indexOf(':') + 1);
     AttrDef def = null;
-    for (AttrDef candidate : attributesOf(context)) {
+    for (AttrDef candidate : app ? libraryAttributesOf(context) : attributesOf(context)) {
       if (candidate.name().equals(name)) {
         def = candidate;
         break;
