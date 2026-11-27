@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="status_sync_running">Gradle sync…</string>
+    <string name="sync_done">Gradle sync finished; the Java server was restarted</string>
+    <string name="sync_failed">Gradle sync failed</string>
+    <string name="sync_details">Details</string>
+</resources>

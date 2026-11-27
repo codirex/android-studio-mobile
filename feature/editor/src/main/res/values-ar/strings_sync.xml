@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="status_sync_running">مزامنة Gradle…</string>
+    <string name="sync_done">اكتملت مزامنة Gradle وأُعيد تشغيل خادم Java</string>
+    <string name="sync_failed">فشلت مزامنة Gradle</string>
+    <string name="sync_details">التفاصيل</string>
+</resources>

@@ -1,0 +1,140 @@
+// Managed by Android Studio Mobile (ADR-0037); it is rewritten before every sync.
+// Adds the task asmSync to every project. The task writes the .project and .classpath files that the
+// Java language server reads, so it knows the Android framework and the libraries of each module.
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+import org.gradle.api.attributes.Attribute
+
+def asmName = { Project p ->
+    p.path == ":" ? p.rootProject.name : p.path.substring(1).replace(":", "-")
+}
+
+def asmEscape = { String s ->
+    s.replace("&", "&amp;").replace("<", "&lt;").replace("\"", "&quot;")
+}
+
+def asmWrite = { Project p ->
+    def android = p.extensions.findByName("android")
+    def dir = p.projectDir
+    def sources = []
+    [
+        "src/main/java",
+        "src/debug/java",
+        "build/generated/source/buildConfig/debug",
+        "build/generated/ap_generated_sources/debug/out",
+        "build/generated/data_binding_base_class_source_out/debug/out",
+        "build/generated/source/kapt/debug"
+    ].each { rel ->
+        if (new File(dir, rel).isDirectory()) {
+            sources << rel
+        }
+    }
+    def libraries = new LinkedHashSet<String>()
+    def projects = new LinkedHashSet<String>()
+
+    if (android != null) {
+        try {
+            def components = p.extensions.findByName("androidComponents")
+            components.sdkComponents.bootClasspath.get().each { libraries << it.asFile.absolutePath }
+        } catch (Throwable e) {
+            println "ASM_SYNC_WARN ${p.path}: no boot classpath (${e.message})"
+        }
+        if (libraries.isEmpty()) {
+            try {
+                def jar = new File(System.getenv("ANDROID_HOME"), "platforms/android-${android.compileSdk}/android.jar")
+                if (jar.isFile()) {
+                    libraries << jar.absolutePath
+                }
+            } catch (Throwable e) {
+                println "ASM_SYNC_WARN ${p.path}: no android.jar (${e.message})"
+            }
+        }
+    }
+
+    def configuration = p.configurations.findByName(android != null ? "debugCompileClasspath" : "compileClasspath")
+    if (configuration != null && configuration.canBeResolved) {
+        try {
+            def type = android != null ? "android-classes-jar" : "jar"
+            def view = configuration.incoming.artifactView { v ->
+                v.lenient(true)
+                v.attributes { a -> a.attribute(Attribute.of("artifactType", String), type) }
+                v.componentFilter { id -> !(id instanceof ProjectComponentIdentifier) }
+            }
+            view.files.each { f ->
+                if (f.name.endsWith(".jar") && f.exists()) {
+                    libraries << f.absolutePath
+                }
+            }
+            configuration.incoming.resolutionResult.allComponents.each { c ->
+                def id = c.id
+                if (id instanceof ProjectComponentIdentifier && id.projectPath != p.path) {
+                    projects << id.projectPath
+                }
+            }
+        } catch (Throwable e) {
+            println "ASM_SYNC_WARN ${p.path}: ${e.message}"
+        }
+    }
+
+    if (android != null) {
+        p.fileTree(new File(dir, "build/intermediates")) { include "**/R.jar" }.each { f ->
+            if (f.path.contains("debug") && !f.path.contains("AndroidTest")) {
+                libraries << f.absolutePath
+            }
+        }
+    }
+
+    if (sources.isEmpty() && android == null) {
+        return
+    }
+
+    def classpath = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<classpath>\n")
+    sources.each { classpath.append("  <classpathentry kind=\"src\" path=\"${asmEscape(it)}\"/>\n") }
+    libraries.each { classpath.append("  <classpathentry kind=\"lib\" path=\"${asmEscape(it)}\"/>\n") }
+    projects.each { path ->
+        def other = p.rootProject.findProject(path)
+        if (other != null) {
+            classpath.append("  <classpathentry combineaccessrules=\"false\" kind=\"src\" path=\"/${asmEscape(asmName(other))}\"/>\n")
+        }
+    }
+    // An Android module takes java.* from android.jar; the JDK would add jdk.* and sun.* to the proposals.
+    if (android == null) {
+        classpath.append("  <classpathentry kind=\"con\" path=\"org.eclipse.jdt.launching.JRE_CONTAINER\"/>\n")
+    }
+    classpath.append("  <classpathentry kind=\"output\" path=\"build/asm-bin\"/>\n</classpath>\n")
+    new File(dir, ".classpath").write(classpath.toString(), "UTF-8")
+
+    def descriptor = """<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+  <name>${asmEscape(asmName(p))}</name>
+  <comment></comment>
+  <projects></projects>
+  <buildSpec>
+    <buildCommand>
+      <name>org.eclipse.jdt.core.javabuilder</name>
+      <arguments></arguments>
+    </buildCommand>
+  </buildSpec>
+  <natures>
+    <nature>org.eclipse.jdt.core.javanature</nature>
+  </natures>
+</projectDescription>
+"""
+    new File(dir, ".project").write(descriptor, "UTF-8")
+    println "ASM_SYNC_OK ${p.path} sources=${sources.size()} libraries=${libraries.size()} projects=${projects.size()}"
+}
+
+gradle.allprojects { Project p ->
+    p.afterEvaluate {
+        if (p.tasks.findByName("asmSync") != null) {
+            return
+        }
+        p.tasks.register("asmSync") { Task t ->
+            t.group = "asm"
+            t.description = "Writes .project and .classpath for the Java language server"
+            t.notCompatibleWithConfigurationCache("it reads the project model")
+            t.doLast {
+                asmWrite(p)
+            }
+        }
+    }
+}
