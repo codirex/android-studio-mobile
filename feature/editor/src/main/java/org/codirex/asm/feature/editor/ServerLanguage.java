@@ -9,7 +9,6 @@ import io.github.rosemoe.sora.lang.analysis.AnalyzeManager;
 import io.github.rosemoe.sora.lang.completion.CompletionCancelledException;
 import io.github.rosemoe.sora.lang.completion.CompletionHelper;
 import io.github.rosemoe.sora.lang.completion.CompletionPublisher;
-import io.github.rosemoe.sora.lang.completion.SimpleCompletionItem;
 import io.github.rosemoe.sora.lang.format.Formatter;
 import io.github.rosemoe.sora.lang.smartEnter.NewlineHandler;
 import io.github.rosemoe.sora.text.CharPosition;
@@ -79,7 +78,7 @@ final class ServerLanguage implements Language {
         replace = prefix.length();
       }
       publisher.addItem(
-          new SimpleCompletionItem(item.label(), item.detail(), replace, item.insertText()));
+          new CaretCompletionItem(item.label(), item.detail(), replace, item.insertText()));
     }
     publisher.updateList(true);
   }

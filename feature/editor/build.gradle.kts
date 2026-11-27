@@ -13,6 +13,7 @@ dependencies {
     api(project(":domain:project"))
     api(project(":domain:editor"))
     implementation(project(":domain:lsp"))
+    implementation(project(":domain:xmlassist"))
 
     implementation(project(":core:concurrency"))
     implementation(project(":core:ui"))

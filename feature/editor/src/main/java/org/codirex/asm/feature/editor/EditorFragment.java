@@ -43,6 +43,8 @@ import org.codirex.asm.domain.lsp.DocumentSymbol;
 import org.codirex.asm.domain.lsp.Location;
 import org.codirex.asm.domain.lsp.TextEdit;
 import org.codirex.asm.domain.project.ProjectName;
+import org.codirex.asm.domain.xmlassist.AndroidXmlCompleter;
+import org.codirex.asm.domain.xmlassist.AttrCatalog;
 import org.codirex.asm.feature.editor.databinding.FragmentEditorBinding;
 import org.codirex.asm.feature.editor.databinding.ItemEditorTabBinding;
 
@@ -851,16 +853,56 @@ public final class EditorFragment extends Fragment {
     if (base == null || (language != SourceLanguage.JAVA && language != SourceLanguage.XML)) {
       return base;
     }
-    return new ServerLanguage(
-        base,
-        (text, line, column) -> {
-          String path = currentPath;
-          JavaLanguageServer server = serverFor(path);
-          if (path == null || server == null) {
-            return null;
-          }
-          return server.complete(uriOf(path), text, line, column);
-        });
+    final File filesDirectory = requireContext().getFilesDir();
+    return new ServerLanguage(base, (text, line, column) -> completeAt(filesDirectory, text, line, column));
+  }
+
+  /**
+   * The proposals of the shown file at a position: the language server's, and for a layout file the
+   * Android attributes before them (ADR-0036). Null when nothing can say, so the editor falls back
+   * to its own.
+   */
+  @Nullable
+  private List<org.codirex.asm.domain.lsp.CompletionItem> completeAt(
+      File filesDirectory, String text, int line, int column) {
+    String path = currentPath;
+    JavaLanguageServer server = serverFor(path);
+    if (path == null || server == null) {
+      return null;
+    }
+    List<org.codirex.asm.domain.lsp.CompletionItem> fromServer =
+        server.complete(uriOf(path), text, line, column);
+    if (!AndroidXmlCompleter.appliesTo(path)) {
+      return fromServer;
+    }
+    AttrCatalog catalog = AndroidAttrs.get(filesDirectory);
+    if (catalog == null) {
+      return fromServer;
+    }
+    List<org.codirex.asm.domain.lsp.CompletionItem> merged = new ArrayList<>();
+    Set<String> labels = new HashSet<>();
+    int offset = AndroidXmlCompleter.offsetOf(text, line, column);
+    for (AndroidXmlCompleter.Proposal p : new AndroidXmlCompleter(catalog).complete(text, offset)) {
+      labels.add(p.label());
+      merged.add(
+          new org.codirex.asm.domain.lsp.CompletionItem(
+              p.label(),
+              p.detail(),
+              10,
+              p.insertText(),
+              line,
+              column - p.replaceLength(),
+              line,
+              column));
+    }
+    if (fromServer != null) {
+      for (org.codirex.asm.domain.lsp.CompletionItem item : fromServer) {
+        if (!labels.contains(item.label())) {
+          merged.add(item);
+        }
+      }
+    }
+    return merged.isEmpty() ? fromServer : merged;
   }
 
   private void renderTabs(EditorState state) {
