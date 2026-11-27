@@ -15,13 +15,16 @@ final class LibraryCache {
   private static final class Entry {
     final long modified;
     final LibraryIndex index;
+    final long scanned;
 
-    Entry(long modified, LibraryIndex index) {
+    Entry(long modified, LibraryIndex index, long scanned) {
       this.modified = modified;
       this.index = index;
+      this.scanned = scanned;
     }
   }
 
+  private static final long SOURCES_TTL_MS = 10_000;
   private static final Map<File, Entry> ENTRIES = new HashMap<>();
 
   private LibraryCache() {}
@@ -55,7 +58,11 @@ final class LibraryCache {
     }
     Entry entry = ENTRIES.get(module);
     if (entry == null || entry.modified != list.lastModified()) {
-      entry = new Entry(list.lastModified(), LibraryIndex.load(list));
+      entry = new Entry(list.lastModified(), LibraryIndex.load(list), System.currentTimeMillis());
+      ENTRIES.put(module, entry);
+    } else if (System.currentTimeMillis() - entry.scanned > SOURCES_TTL_MS) {
+      // The views of the project change as the person types classes; the libraries do not.
+      entry = new Entry(entry.modified, entry.index.refreshSources(), System.currentTimeMillis());
       ENTRIES.put(module, entry);
     }
     return entry.index;

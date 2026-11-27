@@ -22,6 +22,7 @@ import java.util.List;
 import org.codirex.asm.databinding.DialogPaletteBinding;
 import org.codirex.asm.databinding.ItemPaletteRowBinding;
 import org.codirex.asm.domain.lsp.DocumentSymbol;
+import org.codirex.asm.domain.lsp.WorkspaceSymbol;
 import org.codirex.asm.domain.palette.FileIndex;
 import org.codirex.asm.domain.palette.FuzzyMatcher;
 
@@ -45,6 +46,12 @@ public final class CommandPaletteFragment extends DialogFragment {
 
     /** Puts the caret at a position (zero based) of the shown file. */
     void paletteGoTo(int line, int column);
+
+    /** The symbols of the project that fit a query, on the main thread; null if no server is ready. */
+    void paletteWorkspaceSymbols(String query, java.util.function.Consumer<List<WorkspaceSymbol>> done);
+
+    /** Opens a file of the project with the caret on {@code line} (1-based). */
+    void paletteOpenFileAt(String relativePath, int line);
   }
 
   private static final int MAX_RESULTS = 40;
@@ -58,6 +65,12 @@ public final class CommandPaletteFragment extends DialogFragment {
   private List<PaletteItem> symbolItems;
   private boolean symbolsRequested;
   private boolean symbolsFailed;
+  private List<PaletteItem> workspaceItems = Collections.emptyList();
+  private String workspaceQuery;
+  private boolean workspacePending;
+  private boolean workspaceFailed;
+  private int workspaceToken;
+  private final Runnable workspaceAsk = this::askWorkspace;
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -127,6 +140,7 @@ public final class CommandPaletteFragment extends DialogFragment {
 
   @Override
   public void onDestroyView() {
+    handler.removeCallbacks(workspaceAsk);
     binding = null;
     adapter = null;
     super.onDestroyView();
@@ -183,7 +197,10 @@ public final class CommandPaletteFragment extends DialogFragment {
     }
     String query = binding.paletteQuery.getText().toString().trim();
     List<PaletteItem> shown;
-    if (query.startsWith("@")) {
+    if (query.startsWith("#")) {
+      requestWorkspace(query.substring(1).trim());
+      shown = workspaceItems;
+    } else if (query.startsWith("@")) {
       requestSymbols();
       List<PaletteItem> source =
           symbolItems == null ? Collections.<PaletteItem>emptyList() : symbolItems;
@@ -204,8 +221,75 @@ public final class CommandPaletteFragment extends DialogFragment {
       emptyText =
           symbolsFailed ? R.string.palette_symbols_unavailable : R.string.palette_symbols_loading;
     }
+    if (query.startsWith("#")) {
+      emptyText =
+          workspaceFailed
+              ? R.string.palette_symbols_unavailable
+              : query.substring(1).trim().isEmpty()
+                  ? R.string.palette_workspace_hint
+                  : workspacePending ? R.string.palette_symbols_loading : R.string.palette_empty;
+    }
     binding.paletteEmpty.setText(emptyText);
     binding.paletteEmpty.setVisibility(shown.isEmpty() ? View.VISIBLE : View.GONE);
+  }
+
+  /** Asks for the symbols of the project after a short pause in typing. */
+  private void requestWorkspace(String query) {
+    if (query.equals(workspaceQuery)) {
+      return;
+    }
+    workspaceQuery = query;
+    handler.removeCallbacks(workspaceAsk);
+    if (query.isEmpty()) {
+      workspaceItems = Collections.emptyList();
+      workspacePending = false;
+      return;
+    }
+    workspacePending = true;
+    handler.postDelayed(workspaceAsk, 250);
+  }
+
+  private void askWorkspace() {
+    if (binding == null || workspaceQuery == null) {
+      return;
+    }
+    final Host host = (Host) requireActivity();
+    final File root = host.paletteProjectDirectory();
+    final int token = ++workspaceToken;
+    final String prefix = root == null ? null : android.net.Uri.fromFile(root).toString() + "/";
+    host.paletteWorkspaceSymbols(
+        workspaceQuery,
+        found -> {
+          if (binding == null || token != workspaceToken) {
+            return;
+          }
+          workspacePending = false;
+          workspaceFailed = found == null;
+          List<PaletteItem> built = new ArrayList<>();
+          if (found != null && prefix != null) {
+            for (WorkspaceSymbol symbol : found) {
+              // Classes of the JDK and of libraries are not files of the project.
+              if (!symbol.uri().startsWith(prefix) || built.size() >= MAX_RESULTS) {
+                continue;
+              }
+              final String path = android.net.Uri.decode(symbol.uri().substring(prefix.length()));
+              final int line = symbol.line() + 1;
+              String subtitle = symbol.kindName();
+              if (!symbol.container().isEmpty()) {
+                subtitle += " - " + symbol.container();
+              }
+              built.add(
+                  PaletteItem.file(
+                      symbol.name(),
+                      subtitle + " - " + path,
+                      symbol.name(),
+                      R.drawable.ic_palette_symbol,
+                      () -> host.paletteOpenFileAt(path, line)));
+            }
+          }
+          workspaceItems = built;
+          refresh();
+        });
   }
 
   /** Asks once for the symbols of the shown file; the palette fills in when they arrive. */

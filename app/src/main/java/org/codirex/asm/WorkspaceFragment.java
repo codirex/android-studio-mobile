@@ -166,6 +166,18 @@ public final class WorkspaceFragment extends Fragment {
     }
   }
 
+  /** Asks the language server of the shown file for the symbols of the project (null: not available). */
+  void workspaceSymbols(
+      String query,
+      java.util.function.Consumer<java.util.List<org.codirex.asm.domain.lsp.WorkspaceSymbol>> done) {
+    EditorFragment editor = editor();
+    if (editor == null) {
+      done.accept(null);
+    } else {
+      editor.loadWorkspaceSymbols(query, done);
+    }
+  }
+
   /** Puts the caret at a position (zero based) of the shown file. */
   void goTo(int line, int column) {
     EditorFragment editor = editor();

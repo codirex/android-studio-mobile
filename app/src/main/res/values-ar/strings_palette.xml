@@ -2,7 +2,8 @@
 <resources>
     <string name="palette_action">بحث</string>
     <string name="palette_query_hint">ابحث عن ملفات وأوامر</string>
-    <string name="palette_hint">ابحث عن ملفات وأوامر. ابدأ بـ &gt; للأوامر فقط، أو بـ @ لرموز هذا الملف.</string>
+    <string name="palette_hint">ابحث عن ملفات وأوامر. ابدأ بـ &gt; للأوامر فقط، أو بـ @ لرموز هذا الملف، أو بـ # لرموز المشروع كله.</string>
+    <string name="palette_workspace_hint">اكتب اسم كلاس أو دالة أو حقل</string>
     <string name="palette_empty">لا توجد نتائج</string>
     <string name="palette_symbols_loading">جارٍ تحميل الرموز…</string>
     <string name="palette_symbols_unavailable">خادم لغة هذا الملف غير جاهز</string>

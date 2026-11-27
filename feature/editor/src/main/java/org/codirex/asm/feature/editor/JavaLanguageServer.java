@@ -19,6 +19,7 @@ import org.codirex.asm.domain.lsp.DocumentSymbol;
 import org.codirex.asm.domain.lsp.LanguageSession;
 import org.codirex.asm.domain.lsp.Location;
 import org.codirex.asm.domain.lsp.TextEdit;
+import org.codirex.asm.domain.lsp.WorkspaceSymbol;
 import org.codirex.asm.terminal.protocol.ITerminalService;
 import org.codirex.asm.terminal.view.TerminalConnection;
 
@@ -318,6 +319,11 @@ final class JavaLanguageServer {
   /** The symbols of the document in the order they are declared; null if the server did not answer. */
   List<DocumentSymbol> documentSymbols(String uri, String text) {
     return ask(uri, text, s -> s.documentSymbols(uri));
+  }
+
+  /** The symbols of the whole workspace that fit a query; null if the server did not answer. */
+  List<WorkspaceSymbol> workspaceSymbols(String uri, String text, String query) {
+    return ask(uri, text, s -> s.workspaceSymbols(query));
   }
 
   // ---- inside ----

@@ -42,6 +42,7 @@ import org.codirex.asm.domain.lsp.Diagnostic;
 import org.codirex.asm.domain.lsp.DocumentSymbol;
 import org.codirex.asm.domain.lsp.Location;
 import org.codirex.asm.domain.lsp.TextEdit;
+import org.codirex.asm.domain.lsp.WorkspaceSymbol;
 import org.codirex.asm.domain.project.ProjectName;
 import org.codirex.asm.domain.xmlassist.AndroidXmlCompleter;
 import org.codirex.asm.domain.xmlassist.AttrCatalog;
@@ -648,6 +649,32 @@ public final class EditorFragment extends Fragment {
               handler.post(() -> done.accept(found));
             },
             "java-symbols")
+        .start();
+  }
+
+  /**
+   * Asks the language server of the shown file for the symbols of the whole project that fit a
+   * query (the palette's {@code #}). {@code done} is called on the main thread, with null if the
+   * file has no server that is ready.
+   */
+  public void loadWorkspaceSymbols(
+      final String query, java.util.function.Consumer<List<WorkspaceSymbol>> done) {
+    final String path = currentPath;
+    final JavaLanguageServer server = serverFor(path);
+    if (binding == null
+        || server == null
+        || server.state() != JavaLanguageServer.State.READY) {
+      done.accept(null);
+      return;
+    }
+    final String text = binding.editor.getText().toString();
+    final String uri = uriOf(path);
+    new Thread(
+            () -> {
+              List<WorkspaceSymbol> found = server.workspaceSymbols(uri, text, query);
+              handler.post(() -> done.accept(found));
+            },
+            "java-workspace-symbols")
         .start();
   }
 

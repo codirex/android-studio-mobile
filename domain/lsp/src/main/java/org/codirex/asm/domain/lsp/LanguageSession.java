@@ -91,6 +91,9 @@ public final class LanguageSession {
     Map<String, Object> workspace = new LinkedHashMap<>();
     workspace.put("configuration", true);
     workspace.put("workspaceFolders", true);
+    Map<String, Object> workspaceSymbol = new LinkedHashMap<>();
+    workspaceSymbol.put("dynamicRegistration", false);
+    workspace.put("symbol", workspaceSymbol);
     Map<String, Object> capabilities = new LinkedHashMap<>();
     capabilities.put("textDocument", textDocument);
     capabilities.put("workspace", workspace);
@@ -202,6 +205,15 @@ public final class LanguageSession {
     return client
         .request("textDocument/documentSymbol", params)
         .thenApply(LanguageSession::symbolsOf);
+  }
+
+  /** Asks for the symbols of the whole workspace whose names fit {@code query}. */
+  public CompletableFuture<List<WorkspaceSymbol>> workspaceSymbols(String query) {
+    Map<String, Object> params = new LinkedHashMap<>();
+    params.put("query", query);
+    return client
+        .request("workspace/symbol", params)
+        .thenApply(LanguageSession::workspaceSymbolsOf);
   }
 
   private static Map<String, Object> positionParams(String uri, int line, int character) {
@@ -458,6 +470,38 @@ public final class LanguageSession {
         addSymbols((List<?>) map.get("children"), name, out);
       }
     }
+  }
+
+  /** The symbols of a workspace/symbol answer: SymbolInformation[] or WorkspaceSymbol[]. */
+  static List<WorkspaceSymbol> workspaceSymbolsOf(Object result) {
+    List<WorkspaceSymbol> symbols = new ArrayList<>();
+    if (!(result instanceof List)) {
+      return symbols;
+    }
+    for (Object entry : (List<?>) result) {
+      if (!(entry instanceof Map)) {
+        continue;
+      }
+      Map<?, ?> map = (Map<?, ?>) entry;
+      Object location = map.get("location");
+      if (!(map.get("name") instanceof String) || !(location instanceof Map)) {
+        continue;
+      }
+      Map<?, ?> where = (Map<?, ?>) location;
+      if (!(where.get("uri") instanceof String)) {
+        continue;
+      }
+      Object start = where.get("range") instanceof Map ? ((Map<?, ?>) where.get("range")).get("start") : null;
+      symbols.add(
+          new WorkspaceSymbol(
+              (String) map.get("name"),
+              number(map.get("kind"), 0),
+              text(map.get("containerName"), ""),
+              (String) where.get("uri"),
+              start == null ? 0 : number(position(start, "line"), 0),
+              start == null ? 0 : number(position(start, "character"), 0)));
+    }
+    return symbols;
   }
 
   static List<Diagnostic> diagnosticsOf(Object list) {

@@ -142,10 +142,48 @@ public final class AndroidXmlCompleter {
     return out;
   }
 
+  private static String simpleName(String tag) {
+    return tag.substring(tag.lastIndexOf('.') + 1);
+  }
+
+  /** The framework tag that a tag stands for: itself, or what a view of a library or the project extends. */
+  private String baseOf(String tag) {
+    if (tag == null) {
+      return null;
+    }
+    String base = libraries.frameworkBase(simpleName(tag));
+    return base != null ? base : tag;
+  }
+
   private List<AttrDef> attributesOf(XmlContext context) {
-    List<String> styleables = new ArrayList<>(ViewClasses.chain(context.tag()));
-    styleables.addAll(ViewClasses.layoutStyleables(context.parent()));
+    List<String> styleables = new ArrayList<>(ViewClasses.chain(baseOf(context.tag())));
+    styleables.addAll(ViewClasses.layoutStyleables(baseOf(context.parent())));
     return catalog.attributes(styleables);
+  }
+
+  /** Attributes that only the tools namespace has (design-time, ignored when the app runs). */
+  private static final List<AttrDef> TOOLS_ONLY =
+      Arrays.asList(
+          tool("context", "string"),
+          tool("ignore", "string"),
+          tool("targetApi", "string"),
+          tool("listitem", "reference"),
+          tool("layout", "reference"),
+          tool("showIn", "reference"),
+          tool("itemCount", "integer"),
+          tool("menu", "string"),
+          tool("viewBindingIgnore", "boolean"),
+          tool("openDrawer", "string"),
+          tool("parentTag", "string"));
+
+  private static AttrDef tool(String name, String format) {
+    return new AttrDef(name, Arrays.asList(format), Collections.<String>emptyList());
+  }
+
+  private List<AttrDef> toolsAttributesOf(XmlContext context) {
+    List<AttrDef> out = new ArrayList<>(attributesOf(context));
+    out.addAll(TOOLS_ONLY);
+    return out;
   }
 
   /**
@@ -158,20 +196,22 @@ public final class AndroidXmlCompleter {
       return Collections.emptyList();
     }
     List<String> names = new ArrayList<>();
-    String simple = context.tag().substring(context.tag().lastIndexOf('.') + 1);
-    names.add(simple);
-    if (!libs.hasStyleable(simple)) {
-      names.add(simple + "_Layout");
+    for (String own : libraries.chainOf(simpleName(context.tag()))) {
+      names.add(own);
+      if (!libs.hasStyleable(own)) {
+        names.add(own + "_Layout");
+      }
     }
-    for (String cls : ViewClasses.chain(context.tag())) {
+    for (String cls : ViewClasses.chain(baseOf(context.tag()))) {
       names.add(cls);
       names.add("AppCompat" + cls);
       names.add("Material" + cls);
     }
     if (context.parent() != null) {
-      String parent = context.parent().substring(context.parent().lastIndexOf('.') + 1);
-      names.add(parent + "_Layout");
-      for (String cls : ViewClasses.chain(context.parent())) {
+      for (String own : libraries.chainOf(simpleName(context.parent()))) {
+        names.add(own + "_Layout");
+      }
+      for (String cls : ViewClasses.chain(baseOf(context.parent()))) {
         names.add(cls + "_Layout");
       }
     }
@@ -183,15 +223,20 @@ public final class AndroidXmlCompleter {
     String prefix = context.prefix();
     boolean framework = true;
     boolean library = true;
+    boolean tools = false;
     String typed = prefix;
     int colon = prefix.indexOf(':');
     if (colon >= 0) {
       framework = prefix.startsWith("android:");
       library = prefix.startsWith("app:");
-      if (!framework && !library) {
+      tools = prefix.startsWith("tools:");
+      if (!framework && !library && !tools) {
         return out;
       }
       typed = prefix.substring(colon + 1);
+    }
+    if (tools) {
+      add(out, toolsAttributesOf(context), "tools:", context, prefix, typed);
     }
     if (framework) {
       add(out, attributesOf(context), "android:", context, prefix, typed);
@@ -223,12 +268,14 @@ public final class AndroidXmlCompleter {
     List<Proposal> out = new ArrayList<>();
     String attribute = context.attribute();
     boolean app = attribute.startsWith("app:");
-    if (!attribute.startsWith("android:") && !app) {
+    boolean tools = attribute.startsWith("tools:");
+    if (!attribute.startsWith("android:") && !app && !tools) {
       return out;
     }
     String name = attribute.substring(attribute.indexOf(':') + 1);
     AttrDef def = null;
-    for (AttrDef candidate : app ? libraryAttributesOf(context) : attributesOf(context)) {
+    for (AttrDef candidate :
+        app ? libraryAttributesOf(context) : tools ? toolsAttributesOf(context) : attributesOf(context)) {
       if (candidate.name().equals(name)) {
         def = candidate;
         break;

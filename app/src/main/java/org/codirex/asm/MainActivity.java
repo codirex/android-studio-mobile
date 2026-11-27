@@ -385,6 +385,26 @@ public final class MainActivity extends AppCompatActivity
   }
 
   @Override
+  public void paletteWorkspaceSymbols(
+      String query,
+      java.util.function.Consumer<java.util.List<org.codirex.asm.domain.lsp.WorkspaceSymbol>> done) {
+    WorkspaceFragment workspace = workspace();
+    if (workspace == null) {
+      done.accept(null);
+    } else {
+      workspace.workspaceSymbols(query, done);
+    }
+  }
+
+  @Override
+  public void paletteOpenFileAt(String relativePath, int line) {
+    WorkspaceFragment workspace = workspace();
+    if (workspace != null) {
+      workspace.openFile(relativePath, line);
+    }
+  }
+
+  @Override
   public void paletteGoTo(int line, int column) {
     WorkspaceFragment workspace = workspace();
     if (workspace != null) {

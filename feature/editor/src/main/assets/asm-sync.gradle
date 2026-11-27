@@ -33,6 +33,7 @@ def asmWrite = { Project p ->
     // For the completion of layouts (ADR-0038): the resource folders and jars of the libraries.
     def resourceDirs = new LinkedHashSet<String>()
     def libraryJars = new LinkedHashSet<String>()
+    def sourceDirs = new LinkedHashSet<String>()
 
     if (android != null) {
         try {
@@ -92,6 +93,13 @@ def asmWrite = { Project p ->
                     if (other != null && new File(other.projectDir, "src/main/res").isDirectory()) {
                         resourceDirs << new File(other.projectDir, "src/main/res").absolutePath
                     }
+                    if (other != null) {
+                        ["src/main/java", "src/main/kotlin"].each { rel ->
+                            if (new File(other.projectDir, rel).isDirectory()) {
+                                sourceDirs << new File(other.projectDir, rel).absolutePath
+                            }
+                        }
+                    }
                 }
             }
         } catch (Throwable e) {
@@ -112,9 +120,15 @@ def asmWrite = { Project p ->
         if (own.isDirectory()) {
             resourceDirs << own.absolutePath
         }
+        ["src/main/java", "src/main/kotlin"].each { rel ->
+            if (new File(dir, rel).isDirectory()) {
+                sourceDirs << new File(dir, rel).absolutePath
+            }
+        }
         def list = new StringBuilder()
         resourceDirs.each { list.append("res ").append(it).append("\n") }
         libraryJars.each { list.append("jar ").append(it).append("\n") }
+        sourceDirs.each { list.append("src ").append(it).append("\n") }
         def asmDir = new File(dir, ".asm")
         asmDir.mkdirs()
         new File(asmDir, "libs.txt").write(list.toString(), "UTF-8")
