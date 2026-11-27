@@ -22,5 +22,14 @@ every SDK platform.
 
 ## Consequences
 
-No platform installed means no proposals of this kind. `app:` attributes, library views and project
-resources (`@string/...` names) are not proposed yet: they need the resource index of the project.
+No platform installed means no proposals of this kind. `app:` attributes and library views are not
+proposed yet.
+
+## Resources of the project
+
+`ResourceIndex` lists the names of the project's own resources: values files (`string`, `color`,
+`dimen`, `style`...), the file names in the other `res` folders (`drawable`, `layout`...) and the ids
+that layouts use. Value completion offers `@type/` roots and, after the slash, those names for any
+attribute that accepts a reference, string, color or dimension. The editor reads the index again when
+it is five seconds old; only `src/main/res` folders of the project count, not libraries or the
+framework (`@android:`).

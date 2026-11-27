@@ -45,6 +45,7 @@ import org.codirex.asm.domain.lsp.TextEdit;
 import org.codirex.asm.domain.project.ProjectName;
 import org.codirex.asm.domain.xmlassist.AndroidXmlCompleter;
 import org.codirex.asm.domain.xmlassist.AttrCatalog;
+import org.codirex.asm.domain.xmlassist.ResourceIndex;
 import org.codirex.asm.feature.editor.databinding.FragmentEditorBinding;
 import org.codirex.asm.feature.editor.databinding.ItemEditorTabBinding;
 
@@ -58,6 +59,7 @@ public final class EditorFragment extends Fragment {
 
   private static final long AUTO_SAVE_DELAY_MS = 1000;
   private static final long SERVER_SYNC_DELAY_MS = 400;
+  private static final long RESOURCES_TTL_MS = 5000;
 
   /** The languages that have a language server (ADR-0031, ADR-0033). */
   private static final String[] LSP_LANGUAGES = {"java", "xml"};
@@ -78,6 +80,9 @@ public final class EditorFragment extends Fragment {
   private SelectionMenu selectionMenu;
 
   private File projectDirectory;
+  private final Object resourceLock = new Object();
+  private ResourceIndex resources;
+  private long resourcesAt;
   private final Set<String> installOffered = new HashSet<>();
 
   /** The diagnostics of the shown document, as the server last said (main thread only). */
@@ -882,7 +887,7 @@ public final class EditorFragment extends Fragment {
     List<org.codirex.asm.domain.lsp.CompletionItem> merged = new ArrayList<>();
     Set<String> labels = new HashSet<>();
     int offset = AndroidXmlCompleter.offsetOf(text, line, column);
-    for (AndroidXmlCompleter.Proposal p : new AndroidXmlCompleter(catalog).complete(text, offset)) {
+    for (AndroidXmlCompleter.Proposal p : new AndroidXmlCompleter(catalog, resourcesNow()).complete(text, offset)) {
       labels.add(p.label());
       merged.add(
           new org.codirex.asm.domain.lsp.CompletionItem(
@@ -903,6 +908,18 @@ public final class EditorFragment extends Fragment {
       }
     }
     return merged.isEmpty() ? fromServer : merged;
+  }
+
+  /** The resources of the project, read again when the last reading is a few seconds old. */
+  private ResourceIndex resourcesNow() {
+    synchronized (resourceLock) {
+      long now = System.currentTimeMillis();
+      if (resources == null || now - resourcesAt > RESOURCES_TTL_MS) {
+        resources = ResourceIndex.scan(projectDirectory);
+        resourcesAt = now;
+      }
+      return resources;
+    }
   }
 
   private void renderTabs(EditorState state) {
