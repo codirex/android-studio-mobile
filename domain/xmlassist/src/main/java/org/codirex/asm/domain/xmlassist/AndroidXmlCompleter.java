@@ -3,14 +3,17 @@ package org.codirex.asm.domain.xmlassist;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Proposes what fits at the caret of an Android layout file: view tags, {@code android:}
- * attributes of the tag (by its class and by the layout it is in) and the values of an attribute.
- * It knows only the framework (attrs.xml); {@code app:} attributes and project resources are left to
+ * attributes of the tag (by its class and by the layout it is in) and the values of an attribute,
+ * including {@code @type/name} references to the resources of the project. It knows the framework
+ * (attrs.xml) and the project's own resources; {@code app:} attributes and library views are left to
  * the language server.
  */
 public final class AndroidXmlCompleter {
@@ -53,9 +56,15 @@ public final class AndroidXmlCompleter {
   }
 
   private final AttrCatalog catalog;
+  private final ResourceIndex resources;
 
   public AndroidXmlCompleter(AttrCatalog catalog) {
+    this(catalog, ResourceIndex.empty());
+  }
+
+  public AndroidXmlCompleter(AttrCatalog catalog, ResourceIndex resources) {
     this.catalog = Objects.requireNonNull(catalog, "catalog");
+    this.resources = Objects.requireNonNull(resources, "resources");
   }
 
   /** Whether a project file is a layout, where this completion applies. */
@@ -161,25 +170,59 @@ public final class AndroidXmlCompleter {
     }
     String typed = context.prefix();
     int bar = typed.lastIndexOf('|');
-    String token = bar >= 0 && def.formats().contains("flag") ? typed.substring(bar + 1) : typed;
+    boolean flag = def.formats().contains("flag");
+    String token = bar >= 0 && flag ? typed.substring(bar + 1) : typed;
     List<String> options = new ArrayList<>(def.values());
     if (def.formats().contains("boolean")) {
       options.add("true");
       options.add("false");
     }
-    if (!def.formats().contains("flag")
-        && (def.formats().contains("reference") || def.formats().contains("color"))
-        && (token.isEmpty() || token.startsWith("@"))) {
-      options.addAll(REFERENCES);
-    }
     for (String option : options) {
-      if (!option.toLowerCase(Locale.ROOT).startsWith(token.toLowerCase(Locale.ROOT))) {
-        continue;
+      if (option.toLowerCase(Locale.ROOT).startsWith(token.toLowerCase(Locale.ROOT))) {
+        out.add(value(option, name, context.quoted(), token.length()));
       }
-      String insert = context.quoted() ? option : "\"" + option + "\"";
-      out.add(new Proposal(option, name, insert, token.length()));
+    }
+    boolean accepts =
+        def.formats().contains("reference")
+            || def.formats().contains("color")
+            || def.formats().contains("string")
+            || def.formats().contains("dimension");
+    if (!flag && accepts && (token.isEmpty() || token.startsWith("@"))) {
+      references(token, name, context.quoted(), out);
     }
     return out;
+  }
+
+  private static Proposal value(String text, String attribute, boolean quoted, int replace) {
+    return new Proposal(text, attribute, quoted ? text : "\"" + text + "\"", replace);
+  }
+
+  /** {@code @type/} roots before the slash, the names of the project's resources after it. */
+  private void references(String token, String attribute, boolean quoted, List<Proposal> out) {
+    int slash = token.indexOf('/');
+    if (slash < 0) {
+      Set<String> roots = new LinkedHashSet<>(REFERENCES);
+      for (String type : resources.types()) {
+        roots.add("@" + type + "/");
+      }
+      for (String root : roots) {
+        if (root.toLowerCase(Locale.ROOT).startsWith(token.toLowerCase(Locale.ROOT))) {
+          out.add(value(root, attribute, quoted, token.length()));
+        }
+      }
+      return;
+    }
+    String head = token.substring(0, slash + 1);
+    String type = token.substring(token.startsWith("@+") ? 2 : 1, slash);
+    if (type.indexOf(':') >= 0) {
+      return;
+    }
+    String typed = token.substring(slash + 1).toLowerCase(Locale.ROOT);
+    for (String resource : resources.names(type)) {
+      if (resource.toLowerCase(Locale.ROOT).startsWith(typed)) {
+        out.add(value(head + resource, type, quoted, token.length()));
+      }
+    }
   }
 
   private static String join(List<String> parts) {
