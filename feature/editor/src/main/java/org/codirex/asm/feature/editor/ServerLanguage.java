@@ -79,7 +79,14 @@ final class ServerLanguage implements Language {
       }
       publisher.addItem(
           new CaretCompletionItem(
-              item.label(), item.detail(), replace, item.insertText(), item.kind(), prefix));
+              item.label(),
+              item.detail(),
+              replace,
+              item.insertText(),
+              item.kind(),
+              prefix,
+              item.additionalEdits(),
+              item.caretOffset()));
     }
     publisher.updateList(true);
   }

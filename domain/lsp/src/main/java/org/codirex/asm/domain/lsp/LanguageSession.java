@@ -63,7 +63,7 @@ public final class LanguageSession {
     synchronization.put("dynamicRegistration", false);
     synchronization.put("didSave", false);
     Map<String, Object> completionItem = new LinkedHashMap<>();
-    completionItem.put("snippetSupport", false);
+    completionItem.put("snippetSupport", true);
     Map<String, Object> completion = new LinkedHashMap<>();
     completion.put("dynamicRegistration", false);
     completion.put("completionItem", completionItem);
@@ -300,6 +300,12 @@ public final class LanguageSession {
         }
       }
     }
+    int caret = -1;
+    if (number(map.get("insertTextFormat"), 1) == 2) {
+      Snippet snippet = Snippet.parse(insert);
+      insert = snippet.text();
+      caret = snippet.caret();
+    }
     return new CompletionItem(
         (String) label,
         text(map.get("detail"), ""),
@@ -308,7 +314,9 @@ public final class LanguageSession {
         startLine,
         startCharacter,
         endLine,
-        endCharacter);
+        endCharacter,
+        editsOf(map.get("additionalTextEdits")),
+        caret);
   }
 
   /** The text of a hover answer: a string, MarkupContent, MarkedString or a list of those. */

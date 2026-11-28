@@ -127,6 +127,13 @@ final class JavaLanguageServer {
     imports.put("maven", maven);
     Map<String, Object> java = new LinkedHashMap<>();
     java.put("import", imports);
+    Map<String, Object> completion = new LinkedHashMap<>();
+    completion.put("enabled", true);
+    completion.put("overwrite", true);
+    completion.put("maxResults", 0);
+    completion.put("guessMethodArguments", "off");
+    completion.put("matchCase", "off");
+    java.put("completion", completion);
     Map<String, Object> settings = new LinkedHashMap<>();
     settings.put("java", java);
     Map<String, Object> options = new LinkedHashMap<>();

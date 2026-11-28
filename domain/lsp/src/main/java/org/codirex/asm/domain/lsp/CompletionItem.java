@@ -1,5 +1,7 @@
 package org.codirex.asm.domain.lsp;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -17,6 +19,8 @@ public final class CompletionItem {
   private final int startCharacter;
   private final int endLine;
   private final int endCharacter;
+  private final List<TextEdit> additionalEdits;
+  private final int caretOffset;
 
   public CompletionItem(
       String label,
@@ -27,6 +31,25 @@ public final class CompletionItem {
       int startCharacter,
       int endLine,
       int endCharacter) {
+    this(label, detail, kind, insertText, startLine, startCharacter, endLine, endCharacter, null, -1);
+  }
+
+  /**
+   * @param additionalEdits changes elsewhere in the document that come with the proposal (an
+   *     import), in the places of the document before the proposal is taken; may be null
+   * @param caretOffset where the caret goes inside {@code insertText}, or -1 for its end
+   */
+  public CompletionItem(
+      String label,
+      String detail,
+      int kind,
+      String insertText,
+      int startLine,
+      int startCharacter,
+      int endLine,
+      int endCharacter,
+      List<TextEdit> additionalEdits,
+      int caretOffset) {
     this.label = Objects.requireNonNull(label, "label");
     this.detail = Objects.requireNonNull(detail, "detail");
     this.kind = kind;
@@ -35,6 +58,9 @@ public final class CompletionItem {
     this.startCharacter = startCharacter;
     this.endLine = endLine;
     this.endCharacter = endCharacter;
+    this.additionalEdits =
+        additionalEdits == null ? Collections.<TextEdit>emptyList() : Collections.unmodifiableList(additionalEdits);
+    this.caretOffset = caretOffset;
   }
 
   public String label() {
@@ -73,6 +99,16 @@ public final class CompletionItem {
 
   public int endCharacter() {
     return endCharacter;
+  }
+
+  /** Changes elsewhere that belong to the proposal, last position first; empty if none. */
+  public List<TextEdit> additionalEdits() {
+    return additionalEdits;
+  }
+
+  /** Where the caret goes inside {@link #insertText()}; -1 for its end. */
+  public int caretOffset() {
+    return caretOffset;
   }
 
   @Override
