@@ -78,7 +78,8 @@ final class ServerLanguage implements Language {
         replace = prefix.length();
       }
       publisher.addItem(
-          new CaretCompletionItem(item.label(), item.detail(), replace, item.insertText()));
+          new CaretCompletionItem(
+              item.label(), item.detail(), replace, item.insertText(), item.kind(), prefix));
     }
     publisher.updateList(true);
   }

@@ -239,6 +239,8 @@ public final class EditorFragment extends Fragment {
     } else {
       binding.editor.setColorScheme(night ? new SchemeDarcula() : new SchemeGitHub());
     }
+    CompletionStyle.colors(requireContext(), binding.editor.getColorScheme());
+    CompletionStyle.install(binding.editor);
     binding.editor.subscribeAlways(ContentChangeEvent.class, this::onContentChanged);
     binding.editor.registerDiagnosticProvider(diagnosticProvider);
     android.graphics.Typeface mono =
@@ -1001,7 +1003,7 @@ public final class EditorFragment extends Fragment {
           new org.codirex.asm.domain.lsp.CompletionItem(
               p.label(),
               p.detail(),
-              10,
+              p.detail().equals("view") ? 7 : p.label().indexOf(':') > 0 ? 10 : 12,
               p.insertText(),
               line,
               column - p.replaceLength(),
